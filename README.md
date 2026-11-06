@@ -10,8 +10,9 @@ Backend de SONORA: gestión de biblioteca musical personal con canciones y álbu
 
 | Nombre | Rama de trabajo | Responsabilidad principal |
 |--------|----------------|---------------------------|
-| Fidel Goldsman | `main` | Módulos de negocio, autenticación, estadísticas |
-| Agustín (Agus) | `AgusRama` | Conexión a PostgreSQL (`env.js`, `pool.js`) |
+| Fidel Goldsman | `main` / `fidel/fixes-core` | Módulos de negocio, autenticación, estadísticas |
+| Agustín (Agus) | `agus/db-setup` | Conexión a PostgreSQL, setup de migraciones y seed |
+| Ignacio | `ignacio/api-docs` | Colección Postman, documentación de endpoints |
 
 ---
 
@@ -59,7 +60,7 @@ db/
   migrations/
     001_init_v2.sql       Esquema de 7 tablas
     002_seed_prueba.sql   Cuenta demo (demo@sonora.app / demo1234)
-    003_reproducciones.sql Migración aditiva (pendiente de aplicar)
+    pending_003_reproducciones.sql  Migración aditiva (aplicar manualmente cuando corresponda)
 ```
 
 ---
@@ -230,7 +231,7 @@ reproducciones (pendiente) — historial de reproducciones para estadísticas de
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
-| GET | `/api/activity?limite=&tipo=` | ✅ | Historial de actividad |
+| GET | `/api/activity?limit=&tipo=` | ✅ | Historial de actividad |
 
 ### Estadísticas
 
@@ -267,7 +268,7 @@ reproducciones (pendiente) — historial de reproducciones para estadísticas de
 ## Autenticación
 
 - JWT almacenado en cookie **HttpOnly** (JS no puede leerla)
-- Cookie `Secure` solo en producción, `SameSite=Lax`
+- Cookie `Secure` y `SameSite=None` en producción (para soportar frontend y backend en dominios distintos), `SameSite=Lax` en desarrollo
 - Fallback a header `Authorization: Bearer <token>` para herramientas de testing
 - El `usuario_id` se obtiene siempre del token (`req.user.id`), nunca del body
 - Expiración configurable vía `JWT_EXPIRES_IN`

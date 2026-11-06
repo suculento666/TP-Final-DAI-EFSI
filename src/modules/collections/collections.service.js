@@ -39,9 +39,13 @@ export const collectionsService = {
 
   async remove(userId, id) {
     return withTransaction(async (client) => {
-      const deleted = await collectionsRepository.remove(userId, id, client);
-      if (!deleted) throw notFound('Colección no encontrada');
+      // Registrar la actividad ANTES del DELETE: así la FK coleccion_id
+      // todavía es válida cuando se inserta en actividad. Si el DELETE falla,
+      // la transacción se revierte y el registro de actividad también.
+      const owned = await collectionsRepository.findByIdOwned(userId, id, client);
+      if (!owned) throw notFound('Colección no encontrada');
       await activityRepository.record({ userId, tipo: 'borrar_coleccion', coleccionId: id }, client);
+      await collectionsRepository.remove(userId, id, client);
       return { id };
     });
   },

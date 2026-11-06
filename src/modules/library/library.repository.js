@@ -32,6 +32,7 @@ export const libraryRepository = {
       params.push(estado);
     }
     if (favorito === true) where.push('bi.es_favorito = TRUE');
+    else if (favorito === false) where.push('bi.es_favorito = FALSE');
     const { rows } = await client.query(
       `${ITEM_WITH_CONTENT} WHERE ${where.join(' AND ')} ORDER BY ${sortCol} DESC`,
       params

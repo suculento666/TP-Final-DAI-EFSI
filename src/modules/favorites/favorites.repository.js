@@ -14,20 +14,33 @@ const WITH_CONTENT = `
 
 // Favoritos viven en biblioteca_items.es_favorito (no hay tabla aparte).
 export const favoritesRepository = {
-  // UPSERT del item: si no existe, lo crea con estado default y marca favorito.
-  // Devuelve null si el contenido no existe (para 404).
   async setFavorite(userId, contenidoId, value, client = pool) {
     const content = await catalogRepository.findById(contenidoId, client);
     if (!content) return null;
-    const { rows } = await client.query(
-      `INSERT INTO biblioteca_items (usuario_id, contenido_id, estado, es_favorito)
-       VALUES ($1, $2, 'quiero_escuchar', $3)
-       ON CONFLICT (usuario_id, contenido_id) DO UPDATE
-         SET es_favorito = EXCLUDED.es_favorito, actualizado_en = now()
-       RETURNING ${FAV_COLUMNS}`,
-      [userId, contenidoId, value]
-    );
-    return rows[0];
+
+    if (value) {
+      // Marcar favorito: si el item no existe en biblioteca, lo crea con estado default.
+      const { rows } = await client.query(
+        `INSERT INTO biblioteca_items (usuario_id, contenido_id, estado, es_favorito)
+         VALUES ($1, $2, 'quiero_escuchar', TRUE)
+         ON CONFLICT (usuario_id, contenido_id) DO UPDATE
+           SET es_favorito = TRUE, actualizado_en = now()
+         RETURNING ${FAV_COLUMNS}`,
+        [userId, contenidoId]
+      );
+      return rows[0];
+    } else {
+      // Quitar favorito: solo actualiza si el item ya existe en biblioteca.
+      // No crea un item nuevo con es_favorito=false: no tendría sentido.
+      const { rows } = await client.query(
+        `UPDATE biblioteca_items
+           SET es_favorito = FALSE, actualizado_en = now()
+         WHERE usuario_id = $1 AND contenido_id = $2
+         RETURNING ${FAV_COLUMNS}`,
+        [userId, contenidoId]
+      );
+      return rows[0] || null; // null → el service lanza 404
+    }
   },
 
   async list(userId, client = pool) {

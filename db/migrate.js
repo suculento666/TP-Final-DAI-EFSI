@@ -1,14 +1,19 @@
 // Runner de migraciones — estrategia del equipo: scripts SQL ordenados,
 // aplicados en orden (sin tabla de tracking; el equipo aplica manualmente).
 //
-// Ejecuta los .sql de db/migrations en orden alfabético. Cada archivo gestiona
-// su propia transacción (BEGIN ... COMMIT). Pensado para ejecutarse UNA sola
-// vez sobre una base limpia. Re-ejecutar falla de forma segura: no duplica
-// tablas existentes (CREATE TABLE choca y se revierte su transacción).
+// Ejecuta los .sql de db/migrations en orden alfabético, pero SOLO los que
+// empiezan con tres dígitos (NNN_*.sql). Archivos con prefijo "pending_"
+// se ignoran y deben aplicarse a mano cuando estén listos.
+//
+// Archivos en db/migrations/:
+//   001_init_v2.sql              → se ejecuta (esquema base)
+//   002_seed_prueba.sql          → se ejecuta (datos demo)
+//   pending_003_reproducciones.sql → IGNORADO hasta aplicar manualmente
+//
+// Para aplicar una migración pendiente:
+//   psql -U $DB_USER -d $DB_NAME -f db/migrations/pending_003_reproducciones.sql
 //
 //   npm run migrate
-//
-// No reemplaza al flujo manual del equipo (psql -f); es una alternativa.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -17,9 +22,13 @@ import pool from '../src/database/pool.js';
 const MIGRATIONS_DIR = path.join(process.cwd(), 'db', 'migrations');
 const LOCK_KEY = 872341;
 
+// Solo archivos que empiezan con NNN_ (tres dígitos + guión bajo).
+// Los prefijados con "pending_" se ignoran.
 async function listSqlFiles() {
   const entries = await fs.readdir(MIGRATIONS_DIR);
-  return entries.filter((f) => f.endsWith('.sql')).sort();
+  return entries
+    .filter((f) => /^\d{3}_.*\.sql$/.test(f))
+    .sort();
 }
 
 async function migrate() {
