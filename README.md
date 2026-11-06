@@ -1,8 +1,8 @@
-# My Collection — MUSICMAN · Backend
+# My Collection — SONORA · Backend
 
 TP Final DAI/EFSI 2026 — ORT Argentina
 
-Backend de MUSICMAN: gestión de biblioteca musical personal con canciones y álbumes de Spotify.
+Backend de SONORA: gestión de biblioteca musical personal con canciones y álbumes de Spotify.
 
 ---
 
@@ -10,9 +10,9 @@ Backend de MUSICMAN: gestión de biblioteca musical personal con canciones y ál
 
 | Nombre | Rama de trabajo | Responsabilidad principal |
 |--------|----------------|---------------------------|
-| Fidel Goldsman | `main` / `fidel/fixes-core` | Módulos de negocio, autenticación, estadísticas |
-| Agustín (Agus) | `agus/db-setup` | Conexión a PostgreSQL, setup de migraciones y seed |
-| Ignacio | `ignacio/api-docs` | Colección Postman, documentación de endpoints |
+| Fidel Goldsman | `main` | Módulos de negocio, autenticación, estadísticas |
+| Agustín (Agus) | `AgusRama` | Conexión a PostgreSQL (`env.js`, `pool.js`) |
+| Ignacio | pendiente | Documentación de endpoints |
 
 ---
 
@@ -27,9 +27,9 @@ Backend de MUSICMAN: gestión de biblioteca musical personal con canciones y ál
 ## Estructura del proyecto
 
 ```
+server.js                 Arranque con verificación de BD
 src/
   app.js                  Express + middlewares + rutas
-server.js                 Arranque con verificación de BD
   config/env.js           Variables de entorno validadas
   database/pool.js        Pool de conexiones pg
   middlewares/
@@ -58,14 +58,9 @@ server.js                 Arranque con verificación de BD
 db/
   migrate.js              Runner de migraciones
   migrations/
-    001_init_v2.sql       Esquema de 7 tablas
-<<<<<<< HEAD
-    002_seed_prueba.sql   Cuenta demo (demo@sonora.app / demo1234)
-    pending_003_reproducciones.sql  Migración aditiva (aplicar manualmente cuando corresponda)
-=======
-    002_seed_prueba.sql   Cuenta demo (demo@MUSICMAN.app / demo1234)
-    003_reproducciones.sql Migración aditiva (pendiente de aplicar)
->>>>>>> 02597665f78ec5127daad117f5d5f3876e807234
+    001_init_v2.sql                    Esquema de 7 tablas
+    002_seed_prueba.sql                Cuenta demo (demo@sonora.app / demo1234)
+    pending_003_reproducciones.sql     Migración aditiva (aplicar manualmente cuando corresponda)
 ```
 
 ---
@@ -120,7 +115,7 @@ npm start         # producción
 ```
 
 **Credenciales de la cuenta demo:**
-- Email: `demo@MUSICMAN.app`
+- Email: `demo@sonora.app`
 - Password: `demo1234`
 
 ---
@@ -138,10 +133,10 @@ La autenticación usa **Client Credentials**: solo para buscar y consultar metad
 ## Pruebas
 
 ```bash
-npm test   # 66 pruebas unitarias (no requieren PostgreSQL)
+npm test   # 70 pruebas unitarias (no requieren PostgreSQL)
 ```
 
-Las pruebas de integración (register/login/endpoints de datos) requieren PostgreSQL. Se documentan en la sección de pruebas.
+Las pruebas de integración (register/login/endpoints de datos) requieren PostgreSQL y no están automatizadas aún. Se deben verificar manualmente con la base corriendo.
 
 ---
 
@@ -263,7 +258,7 @@ reproducciones (pendiente) — historial de reproducciones para estadísticas de
 7. **Colecciones y sus tamaños** — `colecciones` + `coleccion_items`
 8. **Actividad por mes** — últimos 6 meses desde `actividad`
 
-**Pendiente** (requiere aplicar `003_reproducciones.sql`):
+**Pendiente** (requiere aplicar `pending_003_reproducciones.sql` manualmente):
 - Artistas más escuchados
 - Canciones más reproducidas
 - Reproducciones por período
@@ -295,7 +290,7 @@ reproducciones (pendiente) — historial de reproducciones para estadísticas de
 
 | Campo | Valor |
 |-------|-------|
-| Email | `demo@MUSICMAN.app` |
+| Email | `demo@sonora.app` |
 | Password | `demo1234` |
 | Contenidos | 12 (8 tracks + 4 álbumes) |
 | Favoritos | 5 |

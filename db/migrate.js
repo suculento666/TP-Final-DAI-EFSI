@@ -40,24 +40,37 @@ async function migrate() {
 
   const client = await pool.connect();
   try {
-    // Evita dos ejecuciones simultáneas del runner sobre la misma base.
     await client.query('SELECT pg_advisory_lock($1)', [LOCK_KEY]);
 
     console.log(`Aplicando ${files.length} migracion(es) en orden:\n`);
     for (const file of files) {
       const sql = await fs.readFile(path.join(MIGRATIONS_DIR, file), 'utf8');
       try {
-        await client.query(sql); // cada archivo trae su propio BEGIN/COMMIT
+        await client.query(sql);
         console.log(`  OK  ${file}`);
       } catch (err) {
-        // Limpia cualquier transacción que el script haya dejado abierta.
         try { await client.query('ROLLBACK'); } catch { /* ignore */ }
+
+        // 42P07 = "relation already exists": la base ya fue inicializada.
+        // 23505 = unique_violation en el seed: los datos demo ya están cargados.
+        // En ambos casos informamos claramente en lugar de lanzar un error críptico.
+        if (err.code === '42P07') {
+          console.warn(`  SKIP ${file}: las tablas ya existen (base ya inicializada).`);
+          console.warn('         Si querés re-inicializar, creá la base desde cero con:');
+          console.warn('         dropdb my_collection && createdb my_collection');
+          continue;
+        }
+        if (err.code === '23505') {
+          console.warn(`  SKIP ${file}: datos ya presentes (seed ya aplicado).`);
+          continue;
+        }
+
         console.error(`  FAIL ${file}: ${err.message}`);
         throw err;
       }
     }
 
-    console.log('\nMigraciones aplicadas correctamente.');
+    console.log('\nMigraciones aplicadas.');
   } finally {
     try { await client.query('SELECT pg_advisory_unlock($1)', [LOCK_KEY]); } catch { /* ignore */ }
     client.release();
