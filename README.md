@@ -1,301 +1,362 @@
-# My Collection — SONORA · Backend
+# MUSICMAN — My Collection · Backend
 
 TP Final DAI/EFSI 2026 — ORT Argentina
 
-Backend de SONORA: gestión de biblioteca musical personal con canciones y álbumes de Spotify.
+<!-- COMPLETAR: una o dos oraciones propias explicando qué es MUSICMAN,
+     qué problema resuelve y qué puede hacer el usuario en la app. -->
 
 ---
 
-## Integrantes
+## Integrantes y responsabilidades
 
-| Nombre | Rama de trabajo | Responsabilidad principal |
-|--------|----------------|---------------------------|
-| Fidel Goldsman | `main` | Módulos de negocio, autenticación, estadísticas |
-| Agustín (Agus) | `AgusRama` | Conexión a PostgreSQL (`env.js`, `pool.js`) |
-| Ignacio | pendiente | Documentación de endpoints |
+<!-- COMPLETAR: reemplazá esta tabla con los nombres reales, las ramas
+     que efectivamente tienen en GitHub y lo que hizo cada uno.
+     No pongan ramas que todavía no existen. -->
+
+| Nombre | Rama | Responsabilidad |
+|--------|------|-----------------|
+| Fidel Goldsman | `main` | <!-- qué implementaste vos --> |
+| Agustín | `AgusRama` | Conexión a PostgreSQL (`env.js`, `pool.js`) |
+| Ignacio | <!-- rama --> | <!-- qué aportó --> |
 
 ---
 
 ## Tecnologías
 
-- **Node.js** ≥ 20 · **Express** 4 · **PostgreSQL** 16
-- **pg** 8 · **bcryptjs** · **jsonwebtoken** · **zod** · **cookie-parser**
-- Spotify Web API (Client Credentials)
+**Backend:** Node.js ≥ 20, Express 4, PostgreSQL 16, pg 8, bcryptjs, jsonwebtoken, zod, cookie-parser, dotenv
+
+**API externa:** Spotify Web API (Client Credentials) — búsqueda y metadatos de canciones y álbumes
+
+<!-- COMPLETAR: tecnologías del frontend cuando estén definidas -->
 
 ---
 
-## Estructura del proyecto
+## Arquitectura
 
-```
-server.js                 Arranque con verificación de BD
-src/
-  app.js                  Express + middlewares + rutas
-  config/env.js           Variables de entorno validadas
-  database/pool.js        Pool de conexiones pg
-  middlewares/
-    authenticate.js       Verifica JWT (cookie HttpOnly o header)
-    validate.js           Zod: body, query, params
-    errorHandler.js       Manejo centralizado de errores
-  utils/
-    hash.js               bcryptjs helpers
-    jwt.js                sign/verify token + cookie options
-    errors.js             ApiError + helpers (400/401/403/404/409)
-    catchAsync.js         Wrapper async para Express 4
-    withTransaction.js    BEGIN/COMMIT/ROLLBACK helper
-  validators/params.js    Esquemas de parámetros de ruta
-  modules/
-    auth/                 Registro, login, logout, /me
-    users/                Perfil: GET/PATCH /api/users/me
-    catalog/              Búsqueda Spotify + upsert en contenidos
-    library/              CRUD biblioteca_items + estados
-    favorites/            Toggle es_favorito en biblioteca_items
-    ratings/              Puntuación (1-5) en biblioteca_items
-    reviews/              CRUD resenas
-    collections/          CRUD colecciones + coleccion_items
-    activity/             Registro y consulta de actividad
-    statistics/           8 indicadores dinámicos con SQL
-  tests/unit/             Pruebas unitarias (Node test runner)
-db/
-  migrate.js              Runner de migraciones
-  migrations/
-    001_init_v2.sql                    Esquema de 7 tablas
-    002_seed_prueba.sql                Cuenta demo (demo@sonora.app / demo1234)
-    pending_003_reproducciones.sql     Migración aditiva (aplicar manualmente cuando corresponda)
-```
+<!-- COMPLETAR: explicar con sus palabras cómo se comunican React, Express,
+     PostgreSQL y Spotify. No tiene que ser largo: tres o cuatro oraciones
+     sobre la responsabilidad de cada capa alcanzan. -->
 
 ---
 
-## Variables de entorno
+## Instalación local
 
-Copiá `.env.example` → `.env` y completá los valores.
+### Requisitos previos
 
-| Variable | Descripción | Requerida |
-|----------|-------------|-----------|
-| `PORT` | Puerto del servidor (default: 3000) | No |
-| `NODE_ENV` | `development` / `production` | No |
-| `DB_HOST` | Host de PostgreSQL | **Sí** |
-| `DB_PORT` | Puerto de PostgreSQL (default: 5432) | No |
-| `DB_NAME` | Nombre de la base (`my_collection`) | **Sí** |
-| `DB_USER` | Usuario de PostgreSQL | **Sí** |
-| `DB_PASSWORD` | Contraseña de PostgreSQL | **Sí** |
-| `JWT_SECRET` | Secreto JWT (mínimo 32 caracteres) | **Sí** |
-| `JWT_EXPIRES_IN` | Expiración del token (default: `7d`) | No |
-| `FRONTEND_URL` | URL del frontend para CORS | **Sí** |
-| `SPOTIFY_CLIENT_ID` | Client ID de Spotify | **Sí** para catálogo |
-| `SPOTIFY_CLIENT_SECRET` | Client Secret de Spotify | **Sí** para catálogo |
+- Node.js ≥ 20
+- PostgreSQL 16 corriendo localmente
+- Credenciales de Spotify (ver sección Credenciales de Spotify)
 
----
-
-## Instalación y ejecución local
+### Pasos
 
 ```bash
-# 1. Clonar y entrar al proyecto
+# 1. Clonar el repositorio
 git clone https://github.com/suculento666/TP-Final-DAI-EFSI.git
 cd TP-Final-DAI-EFSI
 
 # 2. Instalar dependencias
 npm install
 
-# 3. Configurar entorno
+# 3. Configurar variables de entorno
 cp .env.example .env
-# editar .env con las credenciales locales
+# Editar .env con las credenciales reales (ver Variables de entorno)
 
 # 4. Crear la base de datos
 createdb -U postgres my_collection
 
-# 5. Aplicar el esquema
+# 5. Aplicar el esquema (solo sobre una base vacía)
 psql -U postgres -d my_collection -f db/migrations/001_init_v2.sql
 
-# 6. Cargar datos de prueba (opcional, pero recomendado)
+# 6. Cargar datos de demostración
 psql -U postgres -d my_collection -f db/migrations/002_seed_prueba.sql
 
 # 7. Iniciar el servidor
-npm run dev       # desarrollo (nodemon)
-npm start         # producción
+npm run dev    # desarrollo con nodemon
+npm start      # producción
 ```
 
-**Credenciales de la cuenta demo:**
-- Email: `demo@sonora.app`
-- Password: `demo1234`
+### Nota sobre re-inicialización
+
+Si necesitás aplicar las migraciones sobre una base existente, el runner detecta las tablas y aborta con un mensaje de ayuda. Para empezar desde cero:
+
+```bash
+dropdb my_collection && createdb my_collection
+npm run migrate
+```
+
+---
+
+## Variables de entorno
+
+Copiá `.env.example` a `.env` y completá los valores. **Nunca commitees `.env`.**
+
+| Variable | Descripción | Obligatoria |
+|----------|-------------|-------------|
+| `PORT` | Puerto del servidor (default: 3000) | No |
+| `NODE_ENV` | `development` o `production` | No |
+| `DB_HOST` | Host de PostgreSQL | Sí |
+| `DB_PORT` | Puerto de PostgreSQL (default: 5432) | No |
+| `DB_NAME` | Nombre de la base (`my_collection`) | Sí |
+| `DB_USER` | Usuario de PostgreSQL | Sí |
+| `DB_PASSWORD` | Contraseña de PostgreSQL | Sí |
+| `JWT_SECRET` | Secreto JWT, mínimo 32 caracteres | Sí |
+| `JWT_EXPIRES_IN` | Expiración del token (default: `7d`) | No |
+| `FRONTEND_URL` | URL del frontend (para CORS) | Sí |
+| `SPOTIFY_CLIENT_ID` | Client ID de la app de Spotify | Para catálogo |
+| `SPOTIFY_CLIENT_SECRET` | Client Secret de la app de Spotify | Para catálogo |
 
 ---
 
 ## Credenciales de Spotify
 
-1. Ir a https://developer.spotify.com/dashboard
-2. Crear una aplicación
-3. Copiar **Client ID** y **Client Secret** al `.env`
+1. Crear una aplicación en https://developer.spotify.com/dashboard
+2. Copiar el Client ID y el Client Secret al `.env`
 
-La autenticación usa **Client Credentials**: solo para buscar y consultar metadatos públicos. No accede al historial personal del usuario.
+La autenticación usa **Client Credentials**: permite buscar y consultar metadatos públicos de canciones y álbumes. No accede al historial personal de ningún usuario de Spotify.
+
+---
+
+## Modelo de datos
+
+Siete tablas principales en PostgreSQL. Las eliminaciones de datos personales no borran el catálogo compartido.
+
+```
+usuarios
+  Cuentas de usuario. Campos: id, username, email, password_hash,
+  avatar_url, bio, generos_preferidos, creado_en.
+
+contenidos
+  Catálogo compartido de canciones y álbumes de Spotify.
+  Identificados por spotify_id (único). Campos: id, spotify_id, tipo
+  (track/album), titulo, artista, album, generos[], portada_url,
+  duracion_ms, total_canciones, fecha_lanzamiento, creado_en.
+
+biblioteca_items
+  Relación personal usuario↔contenido. Almacena estado de escucha,
+  favorito y puntuación. Unique (usuario_id, contenido_id).
+  Estados: quiero_escuchar, escuchando, escuchado.
+  Puntuación: 1 a 5 (nullable).
+
+resenas
+  Una reseña por usuario y contenido. Unique (usuario_id, contenido_id).
+
+colecciones
+  Playlists personales. Unique (usuario_id, nombre).
+
+coleccion_items
+  Contenidos dentro de una colección. PK compuesta (coleccion_id, contenido_id).
+
+actividad
+  Registro de acciones del usuario dentro de la app (agregar a biblioteca,
+  cambiar estado, puntuar, reseñar, gestionar colecciones, etc.).
+  contenido_id y coleccion_id son FK nullable con ON DELETE SET NULL.
+```
+
+Relaciones de eliminación:
+- Borrar un usuario elimina en cascada sus datos personales (biblioteca, reseñas, colecciones, actividad).
+- Borrar un contenido del catálogo elimina en cascada las referencias personales, pero el catálogo no se borra por acciones del usuario.
+- Borrar un registro de actividad no borra el contenido ni la colección referenciada.
+
+---
+
+## Estrategia de autenticación y seguridad
+
+- **Contraseñas:** hasheadas con bcryptjs (10 rondas). Nunca se devuelven en respuestas.
+- **JWT:** firmado con secreto de mínimo 32 caracteres y expiración configurable.
+- **Cookie:** HttpOnly, Secure en producción, `SameSite=None` en producción (para frontend y backend en dominios distintos), `SameSite=Lax` en desarrollo.
+- **Autorización:** `req.user.id` siempre viene del JWT verificado, nunca del body.
+- **Aislamiento:** todas las queries filtran por `usuario_id = req.user.id`.
+- **Validación:** Zod en todos los endpoints (body, query params, route params).
+- **SQL:** consultas parametrizadas en todos los módulos.
+- **CORS:** limitado al `FRONTEND_URL` configurado.
+
+---
+
+## API REST
+
+### Convención de respuestas
+
+Éxito:
+```json
+{ "success": true, "data": { ... } }
+```
+
+Error:
+```json
+{ "success": false, "error": { "code": "ERROR_CODE", "message": "Descripción" } }
+```
+
+### Autenticación
+
+| Método | Ruta | Auth | Body | Respuesta |
+|--------|------|------|------|-----------|
+| POST | `/api/auth/register` | — | `{ username, email, password, passwordConfirm }` | `{ user }` + cookie JWT |
+| POST | `/api/auth/login` | — | `{ email, password }` | `{ user }` + cookie JWT |
+| POST | `/api/auth/logout` | — | — | `{ message }` + limpia cookie |
+| GET | `/api/auth/me` | ✅ | — | `{ user }` |
+
+### Perfil
+
+| Método | Ruta | Auth | Body | Respuesta |
+|--------|------|------|------|-----------|
+| GET | `/api/users/me` | ✅ | — | `{ user }` |
+| PATCH | `/api/users/me` | ✅ | `{ avatar_url?, bio?, generos_preferidos? }` | `{ user }` actualizado |
+
+### Catálogo (Spotify)
+
+| Método | Ruta | Auth | Query / Body | Respuesta |
+|--------|------|------|------|-----------|
+| GET | `/api/catalog/search` | ✅ | `?q=texto&tipo=track\|album\|both&limit=20` | `{ tracks: [], albums: [] }` |
+| GET | `/api/catalog/:spotifyId` | ✅ | `?tipo=track\|album` | `{ contenido }` persistido en BD |
+
+### Biblioteca
+
+| Método | Ruta | Auth | Body / Query | Respuesta |
+|--------|------|------|------|-----------|
+| GET | `/api/library` | ✅ | `?estado=&favorito=true\|false&orderBy=` | `{ items: [] }` |
+| POST | `/api/library` | ✅ | `{ contenido: { spotify_id, tipo, titulo, ... }, estado? }` | `{ item }` 201 |
+| PATCH | `/api/library/:contenidoId` | ✅ | `{ estado }` | `{ item }` actualizado |
+| DELETE | `/api/library/:contenidoId` | ✅ | — | `{ contenido_id }` |
+
+### Favoritos
+
+| Método | Ruta | Auth | Respuesta |
+|--------|------|------|-----------|
+| GET | `/api/favorites` | ✅ | `{ items: [] }` |
+| POST | `/api/favorites/:contenidoId` | ✅ | `{ item }` con `es_favorito: true` |
+| DELETE | `/api/favorites/:contenidoId` | ✅ | `{ item }` con `es_favorito: false` |
+
+### Puntuaciones
+
+| Método | Ruta | Auth | Body | Respuesta |
+|--------|------|------|------|-----------|
+| GET | `/api/ratings` | ✅ | — | `{ items: [] }` |
+| PUT | `/api/ratings/:contenidoId` | ✅ | `{ puntuacion }` (1–5, entero) | `{ item }` |
+| DELETE | `/api/ratings/:contenidoId` | ✅ | — | `{ item }` con `puntuacion: null` |
+
+### Reseñas
+
+| Método | Ruta | Auth | Body | Respuesta |
+|--------|------|------|------|-----------|
+| GET | `/api/reviews` | ✅ | — | `{ items: [] }` |
+| GET | `/api/reviews/:contenidoId` | ✅ | — | `{ review }` o `null` |
+| POST | `/api/reviews/:contenidoId` | ✅ | `{ texto }` | `{ review }` 201 |
+| PATCH | `/api/reviews/:contenidoId` | ✅ | `{ texto }` | `{ review }` actualizada |
+| DELETE | `/api/reviews/:contenidoId` | ✅ | — | `{ contenido_id }` |
+
+### Colecciones
+
+| Método | Ruta | Auth | Body | Respuesta |
+|--------|------|------|------|-----------|
+| GET | `/api/collections` | ✅ | — | `{ items: [] }` |
+| POST | `/api/collections` | ✅ | `{ nombre, descripcion?, color? }` | `{ collection }` 201 |
+| GET | `/api/collections/:id` | ✅ | — | `{ collection, items: [] }` |
+| PATCH | `/api/collections/:id` | ✅ | `{ nombre?, descripcion?, color? }` | `{ collection }` |
+| DELETE | `/api/collections/:id` | ✅ | — | `{ id }` |
+| POST | `/api/collections/:id/items` | ✅ | `{ contenidoId }` | `{ added: true\|false }` |
+| DELETE | `/api/collections/:id/items/:contenidoId` | ✅ | — | `{ removed: true }` |
+
+### Actividad
+
+| Método | Ruta | Auth | Query | Respuesta |
+|--------|------|------|-------|-----------|
+| GET | `/api/activity` | ✅ | `?limit=50&tipo=` | `{ items: [] }` |
+
+Valores válidos de `tipo`: `agregar_biblioteca`, `quitar_biblioteca`, `cambiar_estado`, `marcar_favorito`, `quitar_favorito`, `puntuar`, `crear_reseña`, `editar_reseña`, `borrar_reseña`, `crear_coleccion`, `borrar_coleccion`, `agregar_a_coleccion`, `quitar_de_coleccion`.
+
+### Estadísticas
+
+| Método | Ruta | Auth | Respuesta |
+|--------|------|------|-----------|
+| GET | `/api/statistics` | ✅ | Objeto con 8 indicadores (ver sección Estadísticas) |
+
+### Sistema
+
+| Método | Ruta | Auth | Respuesta |
+|--------|------|------|-----------|
+| GET | `/api/health` | — | `{ status: "ok", timestamp, environment }` |
+
+---
+
+## Estadísticas
+
+Ocho indicadores calculados en el momento con SQL real, filtrados por el usuario autenticado. Ningún valor es fijo en el código.
+
+| # | Indicador | Fuente |
+|---|-----------|--------|
+| 1 | Total de canciones y álbumes en biblioteca, por tipo | `biblioteca_items` + `contenidos.tipo` |
+| 2 | Distribución de estados de escucha | `biblioteca_items.estado` |
+| 3 | Total de favoritos | `biblioteca_items.es_favorito = TRUE` |
+| 4 | Promedio y cantidad de puntuaciones | `AVG(biblioteca_items.puntuacion)` |
+| 5 | Géneros más frecuentes en la biblioteca | `unnest(contenidos.generos)` |
+| 6 | Total de reseñas escritas | `resenas` |
+| 7 | Colecciones y cantidad de contenidos en cada una | `colecciones` + `coleccion_items` |
+| 8 | Acciones por mes (últimos 6 meses) | `actividad.creado_en` |
+
+**Pendiente:** estadísticas de artistas más escuchados, canciones más reproducidas y reproducciones por período requieren la tabla `reproducciones` (definida en `pending_003_reproducciones.sql`). No están implementadas todavía.
 
 ---
 
 ## Pruebas
 
 ```bash
-npm test   # 70 pruebas unitarias (no requieren PostgreSQL)
+npm test
 ```
 
-Las pruebas de integración (register/login/endpoints de datos) requieren PostgreSQL y no están automatizadas aún. Se deben verificar manualmente con la base corriendo.
+70 pruebas unitarias que no requieren PostgreSQL. Cubren: hashing de contraseñas, firma y verificación de JWT, validadores Zod de todos los módulos, manejo de errores, catchAsync, y normalización de respuestas de Spotify.
+
+**No están automatizadas:** las pruebas de integración contra PostgreSQL (register/login, CRUD de cada módulo, aislamiento entre usuarios, persistencia). Estas se verifican manualmente con la base corriendo.
+
+<!-- COMPLETAR: si realizaron pruebas manuales, documentar qué probaron
+     y qué resultados obtuvieron. -->
 
 ---
 
-## Modelo de datos
+## Cuenta de demostración
 
-```
-usuarios                   — cuentas de usuario
-contenidos                 — catálogo compartido (canciones y álbumes de Spotify)
-biblioteca_items           — biblioteca personal (estado, es_favorito, puntuacion)
-resenas                    — reseñas de usuario por contenido
-colecciones                — playlists personales
-coleccion_items            — contenidos dentro de una colección
-actividad                  — historial de acciones
-reproducciones (pendiente) — historial de reproducciones para estadísticas de escucha
-```
+Los datos de demostración se cargan con `002_seed_prueba.sql` sobre una base limpia.
 
----
-
-## Endpoints
-
-### Autenticación
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| POST | `/api/auth/register` | Pública | Registro de usuario |
-| POST | `/api/auth/login` | Pública | Inicio de sesión |
-| POST | `/api/auth/logout` | Pública | Cierre de sesión |
-| GET | `/api/auth/me` | ✅ | Usuario autenticado |
-
-### Perfil
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/users/me` | ✅ | Consultar perfil |
-| PATCH | `/api/users/me` | ✅ | Editar avatar, bio, generos_preferidos |
-
-### Catálogo (Spotify)
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/catalog/search?q=&tipo=track\|album\|both&limit=` | ✅ | Buscar canciones/álbumes |
-| GET | `/api/catalog/:spotifyId?tipo=track\|album` | ✅ | Detalle y persistir en contenidos |
-
-### Biblioteca
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/library?estado=&favorito=true\|false&orderBy=` | ✅ | Listar biblioteca |
-| POST | `/api/library` | ✅ | Agregar contenido |
-| PATCH | `/api/library/:contenidoId` | ✅ | Cambiar estado |
-| DELETE | `/api/library/:contenidoId` | ✅ | Quitar de biblioteca |
-
-### Favoritos
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/favorites` | ✅ | Listar favoritos |
-| POST | `/api/favorites/:contenidoId` | ✅ | Marcar favorito |
-| DELETE | `/api/favorites/:contenidoId` | ✅ | Quitar favorito |
-
-### Puntuaciones
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/ratings` | ✅ | Listar puntuados |
-| PUT | `/api/ratings/:contenidoId` | ✅ | Crear/actualizar puntuación (1-5) |
-| DELETE | `/api/ratings/:contenidoId` | ✅ | Eliminar puntuación |
-
-### Reseñas
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/reviews` | ✅ | Mis reseñas |
-| GET | `/api/reviews/:contenidoId` | ✅ | Reseña para un contenido |
-| POST | `/api/reviews/:contenidoId` | ✅ | Crear reseña |
-| PATCH | `/api/reviews/:contenidoId` | ✅ | Editar reseña |
-| DELETE | `/api/reviews/:contenidoId` | ✅ | Eliminar reseña |
-
-### Colecciones
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/collections` | ✅ | Listar colecciones |
-| POST | `/api/collections` | ✅ | Crear colección |
-| GET | `/api/collections/:id` | ✅ | Detalle con contenidos |
-| PATCH | `/api/collections/:id` | ✅ | Renombrar/editar |
-| DELETE | `/api/collections/:id` | ✅ | Eliminar |
-| POST | `/api/collections/:id/items` | ✅ | Agregar contenido |
-| DELETE | `/api/collections/:id/items/:contenidoId` | ✅ | Quitar contenido |
-
-### Actividad
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/activity?limit=&tipo=` | ✅ | Historial de actividad |
-
-### Estadísticas
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/statistics` | ✅ | 8 indicadores dinámicos |
-
-### Sistema
-
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/health` | Pública | Estado del servidor |
-
----
-
-## Estadísticas implementadas
-
-1. **Totales por tipo** — canciones y álbumes en biblioteca (`biblioteca_items` + `contenidos`)
-2. **Distribución de estados** — quiero_escuchar / escuchando / escuchado
-3. **Total de favoritos** — `es_favorito = TRUE`
-4. **Promedio y cantidad de puntuaciones** — `AVG(puntuacion)`
-5. **Géneros más frecuentes** — unnest de `contenidos.generos`
-6. **Total de reseñas** — `resenas`
-7. **Colecciones y sus tamaños** — `colecciones` + `coleccion_items`
-8. **Actividad por mes** — últimos 6 meses desde `actividad`
-
-**Pendiente** (requiere aplicar `pending_003_reproducciones.sql` manualmente):
-- Artistas más escuchados
-- Canciones más reproducidas
-- Reproducciones por período
-
----
-
-## Autenticación
-
-- JWT almacenado en cookie **HttpOnly** (JS no puede leerla)
-- Cookie `Secure` y `SameSite=None` en producción (para soportar frontend y backend en dominios distintos), `SameSite=Lax` en desarrollo
-- Fallback a header `Authorization: Bearer <token>` para herramientas de testing
-- El `usuario_id` se obtiene siempre del token (`req.user.id`), nunca del body
-- Expiración configurable vía `JWT_EXPIRES_IN`
-
----
-
-## Seguridad
-
-- Contraseñas hasheadas con bcryptjs (10 rondas)
-- Consultas parametrizadas en todos los módulos (no hay interpolación de strings del cliente)
-- Aislamiento por usuario en todas las queries (`WHERE usuario_id = req.user.id`)
-- Control de propiedad en colecciones antes de modificar o eliminar
-- Validación de entrada con Zod en todos los endpoints
-- CORS limitado al `FRONTEND_URL` configurado
-
----
-
-## Cuenta demo
-
-| Campo | Valor |
-|-------|-------|
-| Email | `demo@sonora.app` |
-| Password | `demo1234` |
-| Contenidos | 12 (8 tracks + 4 álbumes) |
+| Dato | Cantidad |
+|------|----------|
+| Contenidos en biblioteca | 12 (8 tracks + 4 álbumes) |
 | Favoritos | 5 |
-| Estados | 3 (quiero_escuchar, escuchando, escuchado) |
-| Puntuaciones | 5 |
+| Estados distintos | 3 (quiero_escuchar, escuchando, escuchado) |
+| Puntuaciones cargadas | 8 |
 | Reseñas | 3 |
-| Colecciones | 3 (con contenidos) |
-| Actividad | 12 eventos en los últimos 30 días |
+| Colecciones | 3 (con contenidos en cada una) |
+| Registros de actividad | 12 |
+
+Las credenciales se entregan por el canal indicado por los docentes, no en el repositorio público.
+
+---
+
+## Despliegue
+
+<!-- COMPLETAR: agregar las URLs públicas cuando el deploy esté listo.
+     La consigna exige que tanto el frontend como el backend estén
+     desplegados y accesibles. -->
+
+- Frontend: (pendiente)
+- Backend: (pendiente)
+- Base de datos: PostgreSQL accesible desde el backend desplegado (pendiente)
+
+---
+
+## Organización del equipo
+
+<!-- COMPLETAR: agregar el link al tablero de Trello. La consigna lo exige. -->
+
+- Repositorio: https://github.com/suculento666/TP-Final-DAI-EFSI
+- Tablero de Trello: (pendiente)
+
+Ramas y PRs:
+- `AgusRama` → PR #1 integrado en `main` (conexión a PostgreSQL)
+- <!-- completar con los aportes de Ignacio cuando estén listos -->
+
+---
+
+## Notas para los evaluadores
+
+<!-- COMPLETAR: si hay algo que el evaluador necesita saber antes de
+     probar el sistema (configuración especial, pasos no obvios,
+     limitaciones conocidas), documentarlo acá. -->
