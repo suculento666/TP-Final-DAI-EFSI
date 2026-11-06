@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import config from './config/env.js';
 import errorHandler from './middlewares/errorHandler.js';
+import authRouter from './modules/auth/auth.routes.js';
 
 const app = express();
 
@@ -31,9 +32,8 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Los routers se registran aquí a medida que se implementa cada módulo:
-// import authRouter from './modules/auth/auth.routes.js';
-// app.use('/api/auth', authRouter);
+// Rutas de autenticación
+app.use('/api/auth', authRouter);
 
 // ── Ruta no encontrada ────────────────────────────────────────────────────────
 
