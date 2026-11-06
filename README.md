@@ -1,8 +1,8 @@
-# My Collection — SONORA · Backend
+# My Collection — MUSICMAN · Backend
 
 TP Final DAI/EFSI 2026 — ORT Argentina
 
-Backend de SONORA: gestión de biblioteca musical personal con canciones y álbumes de Spotify.
+Backend de MUSICMAN: gestión de biblioteca musical personal con canciones y álbumes de Spotify.
 
 ---
 
@@ -58,7 +58,7 @@ db/
   migrate.js              Runner de migraciones
   migrations/
     001_init_v2.sql       Esquema de 7 tablas
-    002_seed_prueba.sql   Cuenta demo (demo@sonora.app / demo1234)
+    002_seed_prueba.sql   Cuenta demo (demo@MUSICMAN.app / demo1234)
     003_reproducciones.sql Migración aditiva (pendiente de aplicar)
 ```
 
@@ -114,7 +114,7 @@ npm start         # producción
 ```
 
 **Credenciales de la cuenta demo:**
-- Email: `demo@sonora.app`
+- Email: `demo@MUSICMAN.app`
 - Password: `demo1234`
 
 ---
@@ -289,7 +289,7 @@ reproducciones (pendiente) — historial de reproducciones para estadísticas de
 
 | Campo | Valor |
 |-------|-------|
-| Email | `demo@sonora.app` |
+| Email | `demo@MUSICMAN.app` |
 | Password | `demo1234` |
 | Contenidos | 12 (8 tracks + 4 álbumes) |
 | Favoritos | 5 |
