@@ -6,6 +6,7 @@ import errorHandler from './middlewares/errorHandler.js';
 import authRouter from './modules/auth/auth.routes.js';
 import usersRouter from './modules/users/users.routes.js';
 import catalogRouter from './modules/catalog/catalog.routes.js';
+import libraryRouter from './modules/library/library.routes.js';
 
 const app = express();
 
@@ -42,6 +43,9 @@ app.use('/api/users', usersRouter);
 
 // Rutas de catálogo (Spotify)
 app.use('/api/catalog', catalogRouter);
+
+// Rutas de biblioteca
+app.use('/api/library', libraryRouter);
 
 // ── Ruta no encontrada ────────────────────────────────────────────────────────
 

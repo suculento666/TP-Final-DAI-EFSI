@@ -32,7 +32,7 @@ export const updateEstadoSchema = z
 export const listQuerySchema = z
   .object({
     estado: z.enum(['quiero_escuchar', 'escuchando', 'escuchado']).optional(),
-    favorito: z.enum(['true', 'false']).optional(),
+    favorito: z.enum(['true', 'false']).transform((v) => v === 'true').optional(),
     orderBy: z.enum(['agregado_en', 'actualizado_en', 'titulo']).optional(),
   })
   .strict();
