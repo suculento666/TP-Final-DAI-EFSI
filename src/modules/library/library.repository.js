@@ -16,7 +16,7 @@ const ITEM_WITH_CONTENT = `
 `;
 
 export const libraryRepository = {
-  async list(userId, { estado, favorito, orderBy = 'agregado_en' }) {
+  async list(userId, { estado, favorito, orderBy = 'agregado_en' } = {}, client = pool) {
     const allowedSort = ['agregado_en', 'actualizado_en', 'titulo'];
     const sort = allowedSort.includes(orderBy) ? orderBy : 'agregado_en';
     const where = ['bi.usuario_id = $1'];
@@ -26,42 +26,37 @@ export const libraryRepository = {
       where.push(`bi.estado = $${idx++}`);
       params.push(estado);
     }
-    if (favorito === true) {
-      where.push(`bi.es_favorito = TRUE`);
-    }
+    if (favorito === true) where.push('bi.es_favorito = TRUE');
     const sortCol = sort === 'titulo' ? 'c.titulo' : `bi.${sort}`;
-    const { rows } = await pool.query(
-      `${ITEM_WITH_CONTENT}
-       WHERE ${where.join(' AND ')}
-       ORDER BY ${sortCol} DESC`,
+    const { rows } = await client.query(
+      `${ITEM_WITH_CONTENT} WHERE ${where.join(' AND ')} ORDER BY ${sortCol} DESC`,
       params
     );
     return rows;
   },
 
-  async findByContenido(userId, contenidoId) {
-    const { rows } = await pool.query(
+  async findByContenido(userId, contenidoId, client = pool) {
+    const { rows } = await client.query(
       `${ITEM_WITH_CONTENT} WHERE bi.usuario_id = $1 AND bi.contenido_id = $2`,
       [userId, contenidoId]
     );
     return rows[0] || null;
   },
 
-  async create(userId, contenidoId, estado) {
-    const { rows } = await pool.query(
+  async create(userId, contenidoId, estado, client = pool) {
+    const { rows } = await client.query(
       `INSERT INTO biblioteca_items (usuario_id, contenido_id, estado)
        VALUES ($1, $2, $3)
        ON CONFLICT (usuario_id, contenido_id) DO UPDATE
-         SET estado = EXCLUDED.estado,
-             actualizado_en = now()
+         SET estado = EXCLUDED.estado, actualizado_en = now()
        RETURNING ${ITEM_COLUMNS}`,
       [userId, contenidoId, estado]
     );
     return rows[0];
   },
 
-  async updateEstado(userId, contenidoId, estado) {
-    const { rows } = await pool.query(
+  async updateEstado(userId, contenidoId, estado, client = pool) {
+    const { rows } = await client.query(
       `UPDATE biblioteca_items
          SET estado = $3, actualizado_en = now()
        WHERE usuario_id = $1 AND contenido_id = $2
@@ -71,8 +66,8 @@ export const libraryRepository = {
     return rows[0] || null;
   },
 
-  async remove(userId, contenidoId) {
-    const { rows } = await pool.query(
+  async remove(userId, contenidoId, client = pool) {
+    const { rows } = await client.query(
       `DELETE FROM biblioteca_items
        WHERE usuario_id = $1 AND contenido_id = $2
        RETURNING id`,

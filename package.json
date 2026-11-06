@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "migrate": "node db/migrate.js"
+    "migrate": "node db/migrate.js",
+    "test": "node --test src/tests/unit/*.test.js",
+    "seed": "psql -U $DB_USER -d $DB_NAME -f db/migrations/001_init_v2.sql && psql -U $DB_USER -d $DB_NAME -f db/migrations/002_seed_prueba.sql"
   },
   "engines": {
     "node": ">=20.0.0"

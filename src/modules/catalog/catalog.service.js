@@ -1,5 +1,6 @@
 import { spotifyProvider } from './catalog.provider.js';
 import { catalogRepository } from './catalog.repository.js';
+import pool from '../../database/pool.js';
 import { notFound } from '../../utils/errors.js';
 
 export const catalogService = {
@@ -20,8 +21,8 @@ export const catalogService = {
   },
 
   // Upsert expuesto para que otros módulos (p.ej. biblioteca) persistan un
-  // contenido antes de vincularlo al usuario.
-  async ensureContenido(contenido) {
-    return catalogRepository.upsertContenido(contenido);
+  // contenido antes de vincularlo al usuario. Acepta un cliente de transacción.
+  async ensureContenido(contenido, client = pool) {
+    return catalogRepository.upsertContenido(contenido, client);
   },
 };

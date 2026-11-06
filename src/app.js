@@ -7,6 +7,12 @@ import authRouter from './modules/auth/auth.routes.js';
 import usersRouter from './modules/users/users.routes.js';
 import catalogRouter from './modules/catalog/catalog.routes.js';
 import libraryRouter from './modules/library/library.routes.js';
+import favoritesRouter from './modules/favorites/favorites.routes.js';
+import ratingsRouter from './modules/ratings/ratings.routes.js';
+import reviewsRouter from './modules/reviews/reviews.routes.js';
+import collectionsRouter from './modules/collections/collections.routes.js';
+import activityRouter from './modules/activity/activity.routes.js';
+import statisticsRouter from './modules/statistics/statistics.routes.js';
 
 const app = express();
 
@@ -46,6 +52,22 @@ app.use('/api/catalog', catalogRouter);
 
 // Rutas de biblioteca
 app.use('/api/library', libraryRouter);
+
+// Rutas de favoritos y puntuaciones (sobre biblioteca_items)
+app.use('/api/favorites', favoritesRouter);
+app.use('/api/ratings', ratingsRouter);
+
+// Rutas de reseñas
+app.use('/api/reviews', reviewsRouter);
+
+// Rutas de colecciones
+app.use('/api/collections', collectionsRouter);
+
+// Rutas de actividad
+app.use('/api/activity', activityRouter);
+
+// Rutas de estadísticas
+app.use('/api/statistics', statisticsRouter);
 
 // ── Ruta no encontrada ────────────────────────────────────────────────────────
 
