@@ -3,12 +3,12 @@ import { catchAsync } from '../../utils/catchAsync.js';
 
 export const ratingsController = {
   set: catchAsync(async (req, res) => {
-    const item = await ratingsService.set(req.user.id, req.params.contenidoId, req.body.puntuacion);
+    const item = await ratingsService.set(req.user.id, Number(req.params.contenidoId), req.body.puntuacion);
     res.json({ success: true, data: { item } });
   }),
 
   clear: catchAsync(async (req, res) => {
-    const item = await ratingsService.clear(req.user.id, req.params.contenidoId);
+    const item = await ratingsService.clear(req.user.id, Number(req.params.contenidoId));
     res.json({ success: true, data: { item } });
   }),
 

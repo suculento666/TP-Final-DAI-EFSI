@@ -12,20 +12,22 @@ function toPublic(user) {
 
 export const authService = {
   async register({ username, email, password }) {
-    if (await authRepository.findByEmail(email)) {
+    const normalizedEmail = email.toLowerCase().trim();
+    if (await authRepository.findByEmail(normalizedEmail)) {
       throw conflict('El correo ya está registrado', 'EMAIL_TAKEN');
     }
     if (await authRepository.findByUsername(username)) {
       throw conflict('El nombre de usuario ya está en uso', 'USERNAME_TAKEN');
     }
     const password_hash = await hashPassword(password);
-    const user = await authRepository.create({ username, email, password_hash });
+    const user = await authRepository.create({ username, email: normalizedEmail, password_hash });
     const token = signToken({ sub: user.id });
     return { user, token };
   },
 
   async login({ email, password }) {
-    const user = await authRepository.findByEmail(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await authRepository.findByEmail(normalizedEmail);
     // Mensaje genérico para no filtrar si existe el correo.
     if (!user) throw unauthorized('Credenciales inválidas', 'BAD_CREDENTIALS');
     const ok = await comparePassword(password, user.password_hash);

@@ -28,7 +28,7 @@ Backend de SONORA: gestión de biblioteca musical personal con canciones y álbu
 ```
 src/
   app.js                  Express + middlewares + rutas
-  server.js               Arranque con verificación de BD
+server.js                 Arranque con verificación de BD
   config/env.js           Variables de entorno validadas
   database/pool.js        Pool de conexiones pg
   middlewares/

@@ -1,6 +1,14 @@
 // Pruebas unitarias de autenticación (hash, JWT, validadores, errores).
 // Ejecutar: npm test
 // No requieren conexión a PostgreSQL.
+// JWT_SECRET se inyecta acá para que env.js pase la validación de 32 chars
+// sin tocar el .env local. Es solo para el entorno de test.
+process.env.JWT_SECRET = process.env.JWT_SECRET?.length >= 32
+  ? process.env.JWT_SECRET
+  : 'test_secret_largo_para_pruebas_unitarias_1234';
+process.env.DB_NAME = process.env.DB_NAME || 'test';
+process.env.DB_USER = process.env.DB_USER || 'test';
+process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'test';
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';

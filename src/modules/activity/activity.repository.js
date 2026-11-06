@@ -1,15 +1,10 @@
 import pool from '../../database/pool.js';
+import { VALID_ACTIVITY_TYPES } from './activity.constants.js';
 
 const ACT_COLUMNS = 'id, usuario_id, tipo, contenido_id, coleccion_id, detalle, creado_en';
 
-// Valores válidos de actividad.tipo (deben coincidir con el CHECK de la tabla).
-export const VALID_TYPES = [
-  'agregar_biblioteca', 'quitar_biblioteca', 'cambiar_estado',
-  'marcar_favorito', 'quitar_favorito', 'puntuar',
-  'crear_reseña', 'editar_reseña', 'borrar_reseña',
-  'crear_coleccion', 'borrar_coleccion',
-  'agregar_a_coleccion', 'quitar_de_coleccion',
-];
+// Re-exportado para compatibilidad con código existente que lo importara directamente.
+export const VALID_TYPES = VALID_ACTIVITY_TYPES;
 
 export const activityRepository = {
   // Registra una acción. `client` permite ejecutarse dentro de una transacción.

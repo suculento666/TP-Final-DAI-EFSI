@@ -101,3 +101,22 @@ describe('colAddItemSchema', () => {
     assert.ok(!colAddItemSchema.safeParse({ contenidoId: -1 }).success);
   });
 });
+
+import { contenidoIdParamSchema, idParamSchema } from '../../validators/params.js';
+
+describe('params coerce', () => {
+  it('contenidoIdParamSchema: string numérico coerce -> number válido', () => {
+    assert.ok(contenidoIdParamSchema.safeParse({ contenidoId: '5' }).success);
+    assert.equal(contenidoIdParamSchema.safeParse({ contenidoId: '5' }).data.contenidoId, 5);
+  });
+  it('contenidoIdParamSchema: string no numérico falla', () => {
+    assert.ok(!contenidoIdParamSchema.safeParse({ contenidoId: 'abc' }).success);
+  });
+  it('contenidoIdParamSchema: string "0" falla (no positivo)', () => {
+    assert.ok(!contenidoIdParamSchema.safeParse({ contenidoId: '0' }).success);
+  });
+  it('idParamSchema: string numérico coerce -> number válido', () => {
+    assert.ok(idParamSchema.safeParse({ id: '42' }).success);
+    assert.equal(idParamSchema.safeParse({ id: '42' }).data.id, 42);
+  });
+});

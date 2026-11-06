@@ -17,8 +17,13 @@ const ITEM_WITH_CONTENT = `
 
 export const libraryRepository = {
   async list(userId, { estado, favorito, orderBy = 'agregado_en' } = {}, client = pool) {
-    const allowedSort = ['agregado_en', 'actualizado_en', 'titulo'];
-    const sort = allowedSort.includes(orderBy) ? orderBy : 'agregado_en';
+    // Mapa explícito: evita que un cambio futuro al whitelist genere inyección.
+    const SORT_MAP = {
+      agregado_en:   'bi.agregado_en',
+      actualizado_en:'bi.actualizado_en',
+      titulo:        'c.titulo',
+    };
+    const sortCol = SORT_MAP[orderBy] ?? 'bi.agregado_en';
     const where = ['bi.usuario_id = $1'];
     const params = [userId];
     let idx = 2;
@@ -27,7 +32,6 @@ export const libraryRepository = {
       params.push(estado);
     }
     if (favorito === true) where.push('bi.es_favorito = TRUE');
-    const sortCol = sort === 'titulo' ? 'c.titulo' : `bi.${sort}`;
     const { rows } = await client.query(
       `${ITEM_WITH_CONTENT} WHERE ${where.join(' AND ')} ORDER BY ${sortCol} DESC`,
       params

@@ -22,7 +22,13 @@ const config = {
   },
 
   jwt: {
-    secret: required('JWT_SECRET'),
+    secret: (() => {
+      const s = required('JWT_SECRET');
+      if (s.length < 32) {
+        throw new Error('JWT_SECRET debe tener al menos 32 caracteres');
+      }
+      return s;
+    })(),
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
 

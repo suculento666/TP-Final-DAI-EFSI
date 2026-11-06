@@ -8,7 +8,7 @@ export const collectionsController = {
   }),
 
   getOne: catchAsync(async (req, res) => {
-    const data = await collectionsService.getOne(req.user.id, req.params.id);
+    const data = await collectionsService.getOne(req.user.id, Number(req.params.id));
     res.json({ success: true, data });
   }),
 
@@ -18,22 +18,22 @@ export const collectionsController = {
   }),
 
   update: catchAsync(async (req, res) => {
-    const collection = await collectionsService.update(req.user.id, req.params.id, req.body);
+    const collection = await collectionsService.update(req.user.id, Number(req.params.id), req.body);
     res.json({ success: true, data: { collection } });
   }),
 
   remove: catchAsync(async (req, res) => {
-    const result = await collectionsService.remove(req.user.id, req.params.id);
+    const result = await collectionsService.remove(req.user.id, Number(req.params.id));
     res.json({ success: true, data: result });
   }),
 
   addItem: catchAsync(async (req, res) => {
-    const result = await collectionsService.addItem(req.user.id, req.params.id, req.body.contenidoId);
+    const result = await collectionsService.addItem(req.user.id, Number(req.params.id), req.body.contenidoId);
     res.status(result.added ? 201 : 200).json({ success: true, data: result });
   }),
 
   removeItem: catchAsync(async (req, res) => {
-    const result = await collectionsService.removeItem(req.user.id, req.params.id, req.params.contenidoId);
+    const result = await collectionsService.removeItem(req.user.id, Number(req.params.id), Number(req.params.contenidoId));
     res.json({ success: true, data: result });
   }),
 };

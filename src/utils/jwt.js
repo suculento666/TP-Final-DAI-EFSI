@@ -22,12 +22,15 @@ export function verifyToken(token) {
 }
 
 // Opciones de la cookie: HttpOnly (JS no la lee), Secure solo en producción
-// (en dev local no hay HTTPS), SameSite=Lax (mitiga CSRF en mismo sitio).
+// (en dev local no hay HTTPS), SameSite=None en producción para soportar
+// frontend y backend en dominios distintos (Vercel + Render). En desarrollo
+// usa Lax para no requerir HTTPS.
 export function cookieOptions() {
+  const isProd = config.nodeEnv === 'production';
   return {
     httpOnly: true,
-    secure: config.nodeEnv === 'production',
-    sameSite: 'lax',
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
     maxAge: expiryToMs(config.jwt.expiresIn),
     path: '/',
   };
