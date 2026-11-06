@@ -11,16 +11,15 @@ const pool = new Pool({
   database: config.db.name,
   user: config.db.user,
   password: config.db.password,
-  // Máximo de conexiones simultáneas. 10 es razonable para desarrollo.
+  // Máximo de conexiones simultáneas.
   max: 10,
   // Tiempo máximo de espera para obtener una conexión del pool (ms)
   connectionTimeoutMillis: 5000,
-  // Tiempo máximo que una conexión puede estar inactiva antes de cerrarse (ms)
+  // Tiempo máximo que una conexión puede estar inactiva antes de cerrarse 
   idleTimeoutMillis: 30000,
 });
 
-// Listener de errores en conexiones idle.
-// Sin esto, un error de red silencioso puede tirar el proceso entero.
+// Ayuda a darnos cuenta de los erroes que no vemos
 pool.on('error', (err) => {
   console.error('Error inesperado en cliente PostgreSQL idle:', err.message);
 });
