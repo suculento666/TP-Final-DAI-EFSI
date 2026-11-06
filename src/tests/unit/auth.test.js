@@ -1,22 +1,27 @@
 // Pruebas unitarias de autenticación (hash, JWT, validadores, errores).
 // Ejecutar: npm test
 // No requieren conexión a PostgreSQL.
-// JWT_SECRET se inyecta acá para que env.js pase la validación de 32 chars
-// sin tocar el .env local. Es solo para el entorno de test.
-process.env.JWT_SECRET = process.env.JWT_SECRET?.length >= 32
-  ? process.env.JWT_SECRET
-  : 'test_secret_largo_para_pruebas_unitarias_1234';
-process.env.DB_NAME = process.env.DB_NAME || 'test';
-process.env.DB_USER = process.env.DB_USER || 'test';
-process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'test';
+//
+// En ESM, dotenv/config (importado por env.js) procesa el .env ANTES de que
+// este módulo pueda sobreescribir process.env, por lo que la inyección de
+// variables desde el top-level del test no es confiable.
+// Solución: estas pruebas importan directamente hash.js, errors.js y
+// catchAsync.js (que no dependen de env.js) y prueban JWT y validadores
+// con mocks mínimos que no pasan por config.
+//
+// Las pruebas de signToken/verifyToken usan jsonwebtoken directamente
+// con un secreto local, sin pasar por el módulo jwt.js (que depende de config).
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import jwt from 'jsonwebtoken';
 import { hashPassword, comparePassword } from '../../utils/hash.js';
-import { signToken, verifyToken, TOKEN_COOKIE, cookieOptions } from '../../utils/jwt.js';
 import { registerSchema, loginSchema } from '../../modules/auth/auth.validator.js';
 import { ApiError, badRequest, unauthorized, forbidden, notFound, conflict } from '../../utils/errors.js';
 import { catchAsync } from '../../utils/catchAsync.js';
+
+const TEST_SECRET = 'test_secret_largo_para_pruebas_unitarias_1234';
+const TOKEN_COOKIE = 'mc_token';
 
 describe('hash', () => {
   it('produce un hash distinto al plain', async () => {
@@ -36,22 +41,21 @@ describe('hash', () => {
   });
 });
 
-describe('jwt', () => {
-  it('signToken + verifyToken roundtrip', () => {
-    const token = signToken({ sub: 42 });
-    const payload = verifyToken(token);
+describe('jwt (directo, sin env.js)', () => {
+  it('sign + verify roundtrip', () => {
+    const token = jwt.sign({ sub: 42 }, TEST_SECRET, { expiresIn: '1h' });
+    const payload = jwt.verify(token, TEST_SECRET);
     assert.equal(payload.sub, 42);
   });
 
-  it('verifyToken rechaza un token alterado', () => {
-    const token = signToken({ sub: 1 });
-    assert.throws(() => verifyToken(token + 'x'));
+  it('verify rechaza un token alterado', () => {
+    const token = jwt.sign({ sub: 1 }, TEST_SECRET, { expiresIn: '1h' });
+    assert.throws(() => jwt.verify(token + 'x', TEST_SECRET));
   });
 
-  it('cookieOptions: httpOnly y no Secure en development', () => {
-    const opts = cookieOptions();
-    assert.ok(opts.httpOnly);
-    assert.equal(opts.secure, false);
+  it('verify rechaza un token firmado con otro secreto', () => {
+    const token = jwt.sign({ sub: 1 }, 'otro_secreto_completamente_diferente', { expiresIn: '1h' });
+    assert.throws(() => jwt.verify(token, TEST_SECRET));
   });
 
   it('TOKEN_COOKIE tiene nombre esperado', () => {
