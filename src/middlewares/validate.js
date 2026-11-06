@@ -26,3 +26,16 @@ export const validateParams = (schema) => (req, res, next) => {
   req.params = result.data;
   return next();
 };
+
+// Validación de query string (ej: ?q=...&limit=...).
+export const validateQuery = (schema) => (req, res, next) => {
+  const result = schema.safeParse(req.query);
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((i) => `${i.path.join('.')}: ${i.message}`)
+      .join('; ');
+    return next(badRequest(issues));
+  }
+  req.query = result.data;
+  return next();
+};

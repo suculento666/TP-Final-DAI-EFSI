@@ -4,6 +4,8 @@ import cookieParser from 'cookie-parser';
 import config from './config/env.js';
 import errorHandler from './middlewares/errorHandler.js';
 import authRouter from './modules/auth/auth.routes.js';
+import usersRouter from './modules/users/users.routes.js';
+import catalogRouter from './modules/catalog/catalog.routes.js';
 
 const app = express();
 
@@ -34,6 +36,12 @@ app.get('/api/health', (req, res) => {
 
 // Rutas de autenticación
 app.use('/api/auth', authRouter);
+
+// Rutas de perfil de usuario
+app.use('/api/users', usersRouter);
+
+// Rutas de catálogo (Spotify)
+app.use('/api/catalog', catalogRouter);
 
 // ── Ruta no encontrada ────────────────────────────────────────────────────────
 
