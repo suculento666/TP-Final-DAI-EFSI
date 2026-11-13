@@ -9,19 +9,24 @@ export const catalogService = {
     return spotifyProvider.search(params);
   },
 
-  // Detalle desde Spotify. Si viene, lo persiste/actualiza en contenidos
-  // (upsert por spotify_id) y devuelve la fila guardada.
-  async getAndPersistDetail(spotifyId, tipo) {
+  // Consulta los metadatos oficiales sin abrir una transacción de base de datos.
+  async getDetail(spotifyId, tipo) {
     const item =
       tipo === 'album'
         ? await spotifyProvider.getAlbum(spotifyId)
         : await spotifyProvider.getTrack(spotifyId);
     if (!item) throw notFound('Contenido no encontrado en Spotify', 'SPOTIFY_NOT_FOUND');
+    return item;
+  },
+
+  // Detalle desde Spotify, persistido por spotify_id.
+  async getAndPersistDetail(spotifyId, tipo) {
+    const item = await this.getDetail(spotifyId, tipo);
     return catalogRepository.upsertContenido(item);
   },
 
-  // Upsert expuesto para que otros módulos (p.ej. biblioteca) persistan un
-  // contenido antes de vincularlo al usuario. Acepta un cliente de transacción.
+  // Solo recibe metadatos obtenidos por el servidor, nunca el body del cliente.
+  // Acepta un cliente para guardar contenido y biblioteca en la misma transacción.
   async ensureContenido(contenido, client = pool) {
     return catalogRepository.upsertContenido(contenido, client);
   },
