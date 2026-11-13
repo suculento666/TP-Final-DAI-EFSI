@@ -5,8 +5,10 @@
 -- Idempotente: ON CONFLICT (usuario_id, contenido_id, reproducido_en) DO NOTHING
 -- garantiza que volver a ejecutar este script no duplique registros.
 --
--- Los timestamps están expresados en hora de Argentina (UTC-3) para que
--- las estadísticas de hábitos por hora sean coherentes con el huso local.
+-- Los timestamps usan TIMESTAMPTZ con offset -03 explícito (Argentina, UTC-3)
+-- para que la columna TIMESTAMPTZ almacene el instante correcto.
+-- extract(hour ... AT TIME ZONE 'America/Argentina/Buenos_Aires') en las
+-- estadísticas devolverá la hora local correcta.
 BEGIN;
 
 WITH u AS (SELECT id FROM usuarios WHERE email = 'demo@sonora.app'),
@@ -16,36 +18,36 @@ SELECT u.id, c.id, data.ts, data.dur, TRUE
 FROM u, c
 JOIN (VALUES
   -- Mr. Brightside (The Killers) — muy escuchada, horario nocturno ARG (23 hs)
-  ('4iV5W9uYEdYUVa79Axb7Rh', (now() - '2 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '23 hours'::interval, 223),
-  ('4iV5W9uYEdYUVa79Axb7Rh', (now() - '5 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '23 hours'::interval, 223),
-  ('4iV5W9uYEdYUVa79Axb7Rh', (now() - '10 days'::interval) AT TIME ZONE 'America/Argentina/Buenos_Aires' + '22 hours'::interval, 223),
-  ('4iV5W9uYEdYUVa79Axb7Rh', (now() - '14 days'::interval) AT TIME ZONE 'America/Argentina/Buenos_Aires' + '22 hours'::interval, 223),
-  ('4iV5W9uYEdYUVa79Axb7Rh', (now() - '20 days'::interval) AT TIME ZONE 'America/Argentina/Buenos_Aires' + '21 hours'::interval, 223),
+  ('4iV5W9uYEdYUVa79Axb7Rh', (now() - '2 days'::interval)::date  + '23:00:00-03'::timetz, 223),
+  ('4iV5W9uYEdYUVa79Axb7Rh', (now() - '5 days'::interval)::date  + '23:00:00-03'::timetz, 223),
+  ('4iV5W9uYEdYUVa79Axb7Rh', (now() - '10 days'::interval)::date + '22:30:00-03'::timetz, 223),
+  ('4iV5W9uYEdYUVa79Axb7Rh', (now() - '14 days'::interval)::date + '22:00:00-03'::timetz, 223),
+  ('4iV5W9uYEdYUVa79Axb7Rh', (now() - '20 days'::interval)::date + '21:45:00-03'::timetz, 223),
   -- Knights of Cydonia (Muse) — tarde ARG (18-21 hs)
-  ('7ouMYWpwJ422jRcDASZB7P', (now() - '3 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '18 hours'::interval, 367),
-  ('7ouMYWpwJ422jRcDASZB7P', (now() - '8 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '19 hours'::interval, 367),
-  ('7ouMYWpwJ422jRcDASZB7P', (now() - '15 days'::interval) AT TIME ZONE 'America/Argentina/Buenos_Aires' + '20 hours'::interval, 367),
-  ('7ouMYWpwJ422jRcDASZB7P', (now() - '25 days'::interval) AT TIME ZONE 'America/Argentina/Buenos_Aires' + '21 hours'::interval, 367),
+  ('7ouMYWpwJ422jRcDASZB7P', (now() - '3 days'::interval)::date  + '18:00:00-03'::timetz, 367),
+  ('7ouMYWpwJ422jRcDASZB7P', (now() - '8 days'::interval)::date  + '19:15:00-03'::timetz, 367),
+  ('7ouMYWpwJ422jRcDASZB7P', (now() - '15 days'::interval)::date + '20:00:00-03'::timetz, 367),
+  ('7ouMYWpwJ422jRcDASZB7P', (now() - '25 days'::interval)::date + '21:00:00-03'::timetz, 367),
   -- Do I Wanna Know? (Arctic Monkeys) — noche tarde ARG
-  ('3AJwUDP919kvQ9QcozQPxg', (now() - '1 day'::interval)   AT TIME ZONE 'America/Argentina/Buenos_Aires' + '23 hours'::interval, 272),
-  ('3AJwUDP919kvQ9QcozQPxg', (now() - '6 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '22 hours'::interval, 272),
-  ('3AJwUDP919kvQ9QcozQPxg', (now() - '12 days'::interval) AT TIME ZONE 'America/Argentina/Buenos_Aires' + '21 hours'::interval, 272),
+  ('3AJwUDP919kvQ9QcozQPxg', (now() - '1 day'::interval)::date   + '23:30:00-03'::timetz, 272),
+  ('3AJwUDP919kvQ9QcozQPxg', (now() - '6 days'::interval)::date  + '22:00:00-03'::timetz, 272),
+  ('3AJwUDP919kvQ9QcozQPxg', (now() - '12 days'::interval)::date + '21:30:00-03'::timetz, 272),
   -- Bohemian Rhapsody (Queen) — tarde-noche ARG
-  ('1mea3bSkSGXuIRvnydlB5b', (now() - '4 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '20 hours'::interval, 354),
-  ('1mea3bSkSGXuIRvnydlB5b', (now() - '9 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '19 hours'::interval, 354),
-  ('1mea3bSkSGXuIRvnydlB5b', (now() - '18 days'::interval) AT TIME ZONE 'America/Argentina/Buenos_Aires' + '20 hours'::interval, 354),
+  ('1mea3bSkSGXuIRvnydlB5b', (now() - '4 days'::interval)::date  + '20:00:00-03'::timetz, 354),
+  ('1mea3bSkSGXuIRvnydlB5b', (now() - '9 days'::interval)::date  + '19:30:00-03'::timetz, 354),
+  ('1mea3bSkSGXuIRvnydlB5b', (now() - '18 days'::interval)::date + '20:45:00-03'::timetz, 354),
   -- Blinding Lights (The Weeknd) — mañana ARG (8-10 hs)
-  ('6rPO02ozF3bM7NnOV4h6s2', (now() - '2 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '8 hours'::interval,  200),
-  ('6rPO02ozF3bM7NnOV4h6s2', (now() - '7 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '9 hours'::interval,  200),
-  ('6rPO02ozF3bM7NnOV4h6s2', (now() - '16 days'::interval) AT TIME ZONE 'America/Argentina/Buenos_Aires' + '10 hours'::interval, 200),
+  ('6rPO02ozF3bM7NnOV4h6s2', (now() - '2 days'::interval)::date  + '08:00:00-03'::timetz, 200),
+  ('6rPO02ozF3bM7NnOV4h6s2', (now() - '7 days'::interval)::date  + '09:15:00-03'::timetz, 200),
+  ('6rPO02ozF3bM7NnOV4h6s2', (now() - '16 days'::interval)::date + '10:00:00-03'::timetz, 200),
   -- Watermelon Sugar (Harry Styles) — mediodía ARG
-  ('0VjIjW4GlUZAMYd2vXMi3b', (now() - '3 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '14 hours'::interval, 174),
-  ('0VjIjW4GlUZAMYd2vXMi3b', (now() - '11 days'::interval) AT TIME ZONE 'America/Argentina/Buenos_Aires' + '15 hours'::interval, 174),
+  ('0VjIjW4GlUZAMYd2vXMi3b', (now() - '3 days'::interval)::date  + '14:00:00-03'::timetz, 174),
+  ('0VjIjW4GlUZAMYd2vXMi3b', (now() - '11 days'::interval)::date + '15:30:00-03'::timetz, 174),
   -- good 4 u (Olivia Rodrigo) — tarde ARG
-  ('1dGr1c8CrMLDpV6mPbImSI', (now() - '5 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '16 hours'::interval, 178),
-  ('1dGr1c8CrMLDpV6mPbImSI', (now() - '13 days'::interval) AT TIME ZONE 'America/Argentina/Buenos_Aires' + '17 hours'::interval, 178),
+  ('1dGr1c8CrMLDpV6mPbImSI', (now() - '5 days'::interval)::date  + '16:00:00-03'::timetz, 178),
+  ('1dGr1c8CrMLDpV6mPbImSI', (now() - '13 days'::interval)::date + '17:45:00-03'::timetz, 178),
   -- Never Gonna Give You Up (Rick Astley) — mediodía ARG
-  ('5ghIJDpPoe3CfHMGu71E6T', (now() - '7 days'::interval)  AT TIME ZONE 'America/Argentina/Buenos_Aires' + '12 hours'::interval, 213)
+  ('5ghIJDpPoe3CfHMGu71E6T', (now() - '7 days'::interval)::date  + '12:00:00-03'::timetz, 213)
 ) AS data(sid, ts, dur) ON c.spotify_id = data.sid
 ON CONFLICT (usuario_id, contenido_id, reproducido_en) DO NOTHING;
 
