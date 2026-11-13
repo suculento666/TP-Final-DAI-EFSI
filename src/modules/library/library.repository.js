@@ -50,7 +50,7 @@ export const libraryRepository = {
 
   async create(userId, contenidoId, estado, client = pool) {
     const { rows } = await client.query(
-      `INSERT INTO biblioteca_items (usuario_id, contenido_id, estado)
+      `INSERT INTO biblioteca_items AS bi (usuario_id, contenido_id, estado)
        VALUES ($1, $2, $3)
        ON CONFLICT (usuario_id, contenido_id) DO UPDATE
          SET estado = EXCLUDED.estado, actualizado_en = now()
@@ -62,7 +62,7 @@ export const libraryRepository = {
 
   async updateEstado(userId, contenidoId, estado, client = pool) {
     const { rows } = await client.query(
-      `UPDATE biblioteca_items
+      `UPDATE biblioteca_items AS bi
          SET estado = $3, actualizado_en = now()
        WHERE usuario_id = $1 AND contenido_id = $2
        RETURNING ${ITEM_COLUMNS}`,

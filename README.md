@@ -79,6 +79,51 @@ npm run dev
 
 ## 7. API y autenticación
 
+### Frontend conectado
+
+El frontend está en [CiroPerazzo/TPFINAL-frontend](https://github.com/CiroPerazzo/TPFINAL-frontend).
+Usar ambos repositorios como carpetas hermanas. La integración se implementa en
+los servicios y pantallas del frontend; requiere conservar también sus cambios.
+
+1. En este backend, configurar `.env`, ejecutar `npm install` y, en una base nueva,
+   `npm run migrate`. Iniciar con `npm run dev` (puerto 3000).
+2. En `../TPFINAL-frontend`, ejecutar `npm install` y `npm run dev`.
+3. Abrir `http://localhost:5173` y registrarse o iniciar sesión.
+
+El frontend usa `/api` y Vite reenvía las solicitudes a `http://localhost:3000`.
+No necesita secretos ni tokens de Spotify. Para otro puerto del backend, copiar
+el `.env.example` del frontend a `.env` y ajustar `API_PROXY_TARGET`.
+La sesión se conserva en la cookie HttpOnly `mc_token` y todas las llamadas
+del frontend incluyen credenciales. Las rutas privadas requieren iniciar sesión.
+
+Para hosting separado, configurar `VITE_API_URL=https://HOST_BACKEND/api` antes
+de compilar el frontend y `FRONTEND_URL=https://HOST_FRONTEND` en el backend,
+con `NODE_ENV=production` y HTTPS. El hosting del frontend debe resolver las
+rutas de React hacia `index.html`; el proxy de Vite solo funciona en desarrollo
+y en la previsualización local.
+
+La búsqueda y consulta de nuevos contenidos requieren credenciales válidas de
+Spotify en el `.env` del backend. Si Node informa `SELF_SIGNED_CERT_IN_CHAIN`
+en esta máquina, Node 24 permite usar los certificados del sistema con
+`$env:NODE_USE_SYSTEM_CA="1"` en PowerShell antes de iniciar el backend.
+No desactivar la verificación TLS. Un error `SPOTIFY_TOKEN_ERROR` posterior
+requiere revisar `SPOTIFY_CLIENT_ID` y `SPOTIFY_CLIENT_SECRET`.
+
+Verificación de ambos repositorios:
+
+```bash
+npm test
+npm run test:frontend
+npm run test:integration
+```
+
+`test:frontend` carga los servicios del frontend hermano y su configuración real
+de Vite. Verifica autenticación, perfil y CRUD mediante HTTP y PostgreSQL en un
+esquema temporal que se elimina al terminar. Solo Spotify usa una respuesta de
+prueba; no es una prueba visual de navegador. Si el frontend está en otra carpeta,
+configurar `FRONTEND_DIR` con su ruta. `test:integration` también consulta Spotify
+real y requiere acceso de red y credenciales válidas.
+
 La API REST utiliza el prefijo `/api` y cuenta con endpoints para:
 
 - Registro, login, logout y usuario autenticado.
