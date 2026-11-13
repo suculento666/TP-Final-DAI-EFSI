@@ -49,10 +49,10 @@ export const playsRepository = {
     return rows;
   },
 
-  // Hábitos de escucha: reproducciones por hora del día.
+  // Hábitos de escucha: reproducciones por hora del día (en hora de Argentina).
   async listeningByHour(userId, client = pool) {
     const { rows } = await client.query(
-      `SELECT extract(hour FROM reproducido_en AT TIME ZONE 'UTC')::int AS hora,
+      `SELECT extract(hour FROM reproducido_en AT TIME ZONE 'America/Argentina/Buenos_Aires')::int AS hora,
               count(*)::int AS reproducciones
        FROM reproducciones
        WHERE usuario_id = $1
