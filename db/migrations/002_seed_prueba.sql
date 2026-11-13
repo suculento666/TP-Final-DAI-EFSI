@@ -1,6 +1,6 @@
 -- 002 · Datos de prueba y cuenta de demostración.
 -- Usuario demo: email demo@sonora.app / password: demo1234
--- (el hash corresponde a 'demo1234' con bcrypt 10 rondas)
+-- Hash generado con bcryptjs.hash('demo1234', 10). Verificado con bcryptjs.compare.
 -- No ejecutar sobre una base con datos reales.
 BEGIN;
 
@@ -8,7 +8,7 @@ INSERT INTO usuarios (username, email, password_hash, avatar_url, bio, generos_p
 VALUES (
   'demo',
   'demo@sonora.app',
-  '$2a$10$XowKxIoILm.u0Q7.3CpkqOwFMzPEBJm9nfHfSJjjnLB4APzPuqkYe',
+  '$2a$10$mz3YQMbkK17pTK/jjboKzeICt4d81FZBXeuzqIVoIYkH24JCvu2oK',
   'https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553d50e8',
   'Amante de la música. Siempre buscando algo nuevo.',
   ARRAY['pop', 'indie', 'rock']

@@ -25,7 +25,8 @@ export const favoritesRepository = {
          VALUES ($1, $2, 'quiero_escuchar', TRUE)
          ON CONFLICT (usuario_id, contenido_id) DO UPDATE
            SET es_favorito = TRUE, actualizado_en = now()
-         RETURNING ${FAV_COLUMNS}`,
+         RETURNING id, usuario_id, contenido_id, estado, es_favorito,
+                   puntuacion, agregado_en, actualizado_en`,
         [userId, contenidoId]
       );
       return rows[0];
@@ -36,7 +37,8 @@ export const favoritesRepository = {
         `UPDATE biblioteca_items
            SET es_favorito = FALSE, actualizado_en = now()
          WHERE usuario_id = $1 AND contenido_id = $2
-         RETURNING ${FAV_COLUMNS}`,
+         RETURNING id, usuario_id, contenido_id, estado, es_favorito,
+                   puntuacion, agregado_en, actualizado_en`,
         [userId, contenidoId]
       );
       return rows[0] || null; // null → el service lanza 404

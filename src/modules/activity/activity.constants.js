@@ -2,8 +2,8 @@
 // Centralizados acá para que el validador y el repositorio no se acoplen entre sí.
 export const VALID_ACTIVITY_TYPES = [
   'agregar_biblioteca', 'quitar_biblioteca', 'cambiar_estado',
-  'marcar_favorito', 'quitar_favorito', 'puntuar',
+  'marcar_favorito', 'quitar_favorito', 'puntuar', 'quitar_puntuacion',
   'crear_reseña', 'editar_reseña', 'borrar_reseña',
-  'crear_coleccion', 'borrar_coleccion',
+  'crear_coleccion', 'editar_coleccion', 'borrar_coleccion',
   'agregar_a_coleccion', 'quitar_de_coleccion',
 ];

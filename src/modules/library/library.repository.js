@@ -54,7 +54,8 @@ export const libraryRepository = {
        VALUES ($1, $2, $3)
        ON CONFLICT (usuario_id, contenido_id) DO UPDATE
          SET estado = EXCLUDED.estado, actualizado_en = now()
-       RETURNING ${ITEM_COLUMNS}`,
+       RETURNING id, usuario_id, contenido_id, estado, es_favorito,
+                 puntuacion, agregado_en, actualizado_en`,
       [userId, contenidoId, estado]
     );
     return rows[0];

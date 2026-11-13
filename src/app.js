@@ -13,6 +13,7 @@ import reviewsRouter from './modules/reviews/reviews.routes.js';
 import collectionsRouter from './modules/collections/collections.routes.js';
 import activityRouter from './modules/activity/activity.routes.js';
 import statisticsRouter from './modules/statistics/statistics.routes.js';
+import playsRouter from './modules/plays/plays.routes.js';
 
 const app = express();
 
@@ -68,6 +69,9 @@ app.use('/api/activity', activityRouter);
 
 // Rutas de estadísticas
 app.use('/api/statistics', statisticsRouter);
+
+// Rutas de reproducciones
+app.use('/api/plays', playsRouter);
 
 // ── Ruta no encontrada ────────────────────────────────────────────────────────
 

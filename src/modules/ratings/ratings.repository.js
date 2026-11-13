@@ -1,12 +1,15 @@
 import pool from '../../database/pool.js';
 import { catalogRepository } from '../catalog/catalog.repository.js';
 
-const RATING_COLUMNS =
-  'bi.id, bi.usuario_id, bi.contenido_id, bi.estado, bi.es_favorito, ' +
-  'bi.puntuacion, bi.agregado_en, bi.actualizado_en';
+// Columnas sin alias de tabla: válido en INSERT/UPDATE donde no hay JOIN.
+const BARE_COLUMNS =
+  'id, usuario_id, contenido_id, estado, es_favorito, ' +
+  'puntuacion, agregado_en, actualizado_en';
 
+// Con alias bi: válido en SELECT con JOIN a contenidos.
 const WITH_CONTENT = `
-  SELECT ${RATING_COLUMNS},
+  SELECT bi.id, bi.usuario_id, bi.contenido_id, bi.estado, bi.es_favorito,
+         bi.puntuacion, bi.agregado_en, bi.actualizado_en,
     c.spotify_id, c.tipo, c.titulo, c.artista, c.album, c.generos,
     c.portada_url, c.duracion_ms, c.total_canciones, c.fecha_lanzamiento
   FROM biblioteca_items bi JOIN contenidos c ON c.id = bi.contenido_id
@@ -23,7 +26,7 @@ export const ratingsRepository = {
        VALUES ($1, $2, 'quiero_escuchar', $3)
        ON CONFLICT (usuario_id, contenido_id) DO UPDATE
          SET puntuacion = EXCLUDED.puntuacion, actualizado_en = now()
-       RETURNING ${RATING_COLUMNS}`,
+       RETURNING ${BARE_COLUMNS}`,
       [userId, contenidoId, score]
     );
     return rows[0];
@@ -33,7 +36,7 @@ export const ratingsRepository = {
     const { rows } = await client.query(
       `UPDATE biblioteca_items SET puntuacion = NULL, actualizado_en = now()
        WHERE usuario_id = $1 AND contenido_id = $2
-       RETURNING ${RATING_COLUMNS}`,
+       RETURNING ${BARE_COLUMNS}`,
       [userId, contenidoId]
     );
     return rows[0] || null;

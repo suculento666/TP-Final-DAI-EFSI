@@ -33,6 +33,10 @@ export const collectionsService = {
       }
       const collection = await collectionsRepository.update(userId, id, fields, client);
       if (!collection) throw notFound('Colección no encontrada');
+      await activityRepository.record(
+        { userId, tipo: 'editar_coleccion', coleccionId: id },
+        client
+      );
       return collection;
     });
   },

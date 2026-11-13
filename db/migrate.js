@@ -1,22 +1,25 @@
 // Runner de migraciones — estrategia del equipo: scripts SQL ordenados,
-// aplicados manualmente (sin tabla schema_migrations).
-//
-// Ejecuta SOLO los archivos NNN_*.sql de db/migrations en orden alfabético.
-// Archivos con prefijo "pending_" se ignoran; deben aplicarse a mano.
+// aplicados en dos modos según el estado de la base.
 //
 // Archivos en db/migrations/:
-//   001_init_v2.sql                  → se ejecuta (esquema base)
-//   002_seed_prueba.sql              → se ejecuta (datos demo)
-//   pending_003_reproducciones.sql   → IGNORADO hasta aplicar manualmente
+//   001_init_v2.sql              → esquema base
+//   002_seed_prueba.sql          → datos demo
+//   003_reproducciones.sql       → tabla de reproducciones
+//   004_actividad_nuevos_tipos.sql → amplía CHECK de actividad.tipo (aditiva)
+//   005_seed_reproducciones.sql  → reproducciones simuladas demo (aditiva)
 //
-// Para aplicar una migración pendiente manualmente:
-//   psql -U $DB_USER -d $DB_NAME -f db/migrations/pending_003_reproducciones.sql
+// MODO 1 — base limpia (npm run migrate):
+//   Ejecuta todos los archivos NNN_*.sql en orden.
+//   Aborta si ya detecta tablas del esquema principal.
 //
-// Comportamiento ante base ya inicializada:
-//   Si detecta tablas del esquema principal, aborta ANTES de ejecutar SQL.
-//   Nunca borra tablas ni bases de datos automáticamente.
-//   Para re-inicializar desde cero:
-//     dropdb my_collection && createdb my_collection && npm run migrate
+// MODO 2 — base ya inicializada (npm run migrate:add):
+//   Ejecuta solo los archivos marcados como "aditivos" (NNN_*.sql con
+//   número >= 4, o sea los que no forman el esquema/seed inicial).
+//   No verifica si las tablas existen; es responsabilidad del DBA
+//   asegurarse de no aplicar la misma migración dos veces.
+//
+// Para re-inicializar desde cero:
+//   dropdb my_collection && createdb my_collection && npm run migrate
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -25,7 +28,8 @@ import pool from '../src/database/pool.js';
 const MIGRATIONS_DIR = path.join(process.cwd(), 'db', 'migrations');
 const LOCK_KEY = 872341;
 
-// Tablas del esquema principal. Si alguna existe, la base ya fue inicializada.
+// Migraciones iniciales (001-003): crean el esquema y los datos demo.
+// Si alguna tabla del esquema principal ya existe, no se vuelven a aplicar.
 const SCHEMA_TABLES = [
   'usuarios',
   'contenidos',
@@ -36,7 +40,11 @@ const SCHEMA_TABLES = [
   'actividad',
 ];
 
-// Solo archivos NNN_*.sql. Los prefijados con "pending_" se ignoran.
+// Número de migración a partir del cual se considera "aditiva".
+// Las migraciones 001-003 son el esquema base; 004+ son incrementales.
+const ADDITIVE_FROM = 4;
+
+// Solo archivos NNN_*.sql (sin prefijo "pending_").
 async function listSqlFiles() {
   const entries = await fs.readdir(MIGRATIONS_DIR);
   return entries
@@ -44,8 +52,17 @@ async function listSqlFiles() {
     .sort();
 }
 
-// Devuelve las tablas del esquema principal que ya existen en la base.
-// Solo consulta el catálogo de PG — no toca datos ni estructura.
+// Separa los archivos en "base" (001-003) y "aditivos" (004+).
+function splitFiles(files) {
+  const base = [];
+  const additive = [];
+  for (const f of files) {
+    const num = parseInt(f.slice(0, 3), 10);
+    (num < ADDITIVE_FROM ? base : additive).push(f);
+  }
+  return { base, additive };
+}
+
 async function detectExistingTables(client) {
   const { rows } = await client.query(
     `SELECT table_name
@@ -58,56 +75,68 @@ async function detectExistingTables(client) {
   return rows.map((r) => r.table_name);
 }
 
-async function migrate() {
-  const files = await listSqlFiles();
+async function runFiles(files, client, label) {
   if (!files.length) {
+    console.log(`  (sin archivos ${label})`);
+    return;
+  }
+  for (const file of files) {
+    const sql = await fs.readFile(path.join(MIGRATIONS_DIR, file), 'utf8');
+    try {
+      await client.query(sql);
+      console.log(`  ✓  ${file}`);
+    } catch (err) {
+      try { await client.query('ROLLBACK'); } catch { /* ignore */ }
+      console.error(`\n✗ Fallo en: ${file}`);
+      console.error(`  Código:  ${err.code || '(sin código)'}`);
+      console.error(`  Detalle: ${err.message}`);
+      console.error('\n  No se ejecutaron las migraciones siguientes.');
+      throw err;
+    }
+  }
+}
+
+async function migrate() {
+  // El modo "add" solo aplica las migraciones aditivas (004+).
+  const additiveOnly = process.argv.includes('--add');
+
+  const allFiles = await listSqlFiles();
+  if (!allFiles.length) {
     console.log(`No hay archivos .sql en ${MIGRATIONS_DIR}`);
     return;
   }
 
+  const { base, additive } = splitFiles(allFiles);
+
   const client = await pool.connect();
   try {
-    // Serializa ejecuciones concurrentes del runner sobre la misma base.
     await client.query('SELECT pg_advisory_lock($1)', [LOCK_KEY]);
 
-    // ── Comprobación previa del estado de la base ─────────────────────────
-    const existing = await detectExistingTables(client);
-    if (existing.length > 0) {
-      console.error('✗ La base ya parece estar inicializada.');
-      console.error(`  Tablas detectadas: ${existing.join(', ')}`);
-      console.error('');
-      console.error('  No se ejecutó ninguna migración.');
-      console.error('  Si querés aplicarlas sobre una base limpia:');
-      console.error('    dropdb my_collection && createdb my_collection');
-      console.error('    npm run migrate');
-      console.error('');
-      console.error('  Si la base está parcialmente inicializada, inspeccioná');
-      console.error('  el estado manualmente antes de continuar.');
-      process.exitCode = 1;
-      return;
-    }
-
-    // ── Ejecución de migraciones ──────────────────────────────────────────
-    console.log(`Aplicando ${files.length} migración(es) en orden:\n`);
-
-    for (const file of files) {
-      const sql = await fs.readFile(path.join(MIGRATIONS_DIR, file), 'utf8');
-      try {
-        await client.query(sql); // cada archivo gestiona su propia transacción
-        console.log(`  ✓  ${file}`);
-      } catch (err) {
-        // Intenta limpiar cualquier transacción que el script haya dejado abierta.
-        try { await client.query('ROLLBACK'); } catch { /* ignore */ }
-
-        console.error(`\n✗ Fallo en: ${file}`);
-        console.error(`  Código:  ${err.code || '(sin código)'}`);
-        console.error(`  Detalle: ${err.message}`);
-        console.error('\n  No se ejecutaron las migraciones siguientes.');
-        throw err; // propaga para que .catch() salga con código 1
+    if (additiveOnly) {
+      // ── MODO: solo migraciones aditivas ──────────────────────────────────
+      console.log(`Aplicando ${additive.length} migración(es) aditiva(s):\n`);
+      await runFiles(additive, client, 'aditivos');
+      console.log('\n✓ Migraciones aditivas aplicadas correctamente.');
+    } else {
+      // ── MODO: inicialización completa (base debe estar vacía) ─────────────
+      const existing = await detectExistingTables(client);
+      if (existing.length > 0) {
+        console.error('✗ La base ya parece estar inicializada.');
+        console.error(`  Tablas detectadas: ${existing.join(', ')}`);
+        console.error('');
+        console.error('  Opciones:');
+        console.error('  · Para aplicar solo migraciones aditivas (004+):');
+        console.error('      npm run migrate:add');
+        console.error('  · Para re-inicializar desde cero:');
+        console.error('      dropdb my_collection && createdb my_collection && npm run migrate');
+        process.exitCode = 1;
+        return;
       }
+      const filesToRun = [...base, ...additive];
+      console.log(`Aplicando ${filesToRun.length} migración(es) en orden:\n`);
+      await runFiles(filesToRun, client, 'todos');
+      console.log('\n✓ Todas las migraciones aplicadas correctamente.');
     }
-
-    console.log('\n✓ Todas las migraciones aplicadas correctamente.');
   } finally {
     try { await client.query('SELECT pg_advisory_unlock($1)', [LOCK_KEY]); } catch { /* ignore */ }
     client.release();
@@ -116,8 +145,6 @@ async function migrate() {
 }
 
 migrate().catch((err) => {
-  // El mensaje ya fue impreso en el catch del bucle; aquí solo garantizamos
-  // que el proceso salga con código distinto de cero.
   if (!err._logged) {
     console.error('\n✗ Error inesperado:', err.message);
   }
