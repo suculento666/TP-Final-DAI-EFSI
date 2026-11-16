@@ -100,7 +100,7 @@ dropdb my_collection && createdb my_collection && npm run migrate
 
 ## 7. Endpoints de la API
 
-Todas las rutas usan el prefijo `/api`. Las marcadas con 🔒 requieren autenticación mediante cookie HttpOnly (`mc_token`) o header `Authorization: Bearer <token>`.
+
 
 ---
 

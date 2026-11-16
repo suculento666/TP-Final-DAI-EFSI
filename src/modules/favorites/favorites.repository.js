@@ -21,7 +21,7 @@ export const favoritesRepository = {
     if (value) {
       // Marcar favorito: si el item no existe en biblioteca, lo crea con estado default.
       const { rows } = await client.query(
-        `INSERT INTO biblioteca_items (usuario_id, contenido_id, estado, es_favorito)
+        `INSERT INTO biblioteca_items AS bi (usuario_id, contenido_id, estado, es_favorito)
          VALUES ($1, $2, 'quiero_escuchar', TRUE)
          ON CONFLICT (usuario_id, contenido_id) DO UPDATE
            SET es_favorito = TRUE, actualizado_en = now()
@@ -34,7 +34,7 @@ export const favoritesRepository = {
       // Quitar favorito: solo actualiza si el item ya existe en biblioteca.
       // No crea un item nuevo con es_favorito=false: no tendría sentido.
       const { rows } = await client.query(
-        `UPDATE biblioteca_items
+        `UPDATE biblioteca_items AS bi
            SET es_favorito = FALSE, actualizado_en = now()
          WHERE usuario_id = $1 AND contenido_id = $2
          RETURNING id, usuario_id, contenido_id, estado, es_favorito,

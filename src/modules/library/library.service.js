@@ -14,14 +14,17 @@ export const libraryService = {
   // Agrega un contenido a la biblioteca con transacción: upsert contenido
   // → upsert biblioteca_item → registrar actividad.
   async add(userId, { contenido, estado = 'quiero_escuchar' }) {
-    if (!contenido || !contenido.spotify_id || !contenido.tipo || !contenido.titulo) {
-      throw badRequest('contenido es obligatorio (spotify_id, tipo, titulo)');
+    if (!contenido || !contenido.spotify_id || !['track', 'album'].includes(contenido.tipo)) {
+      throw badRequest('contenido es obligatorio (spotify_id y tipo track o album)');
     }
     if (!VALID_ESTADOS.includes(estado)) {
       throw badRequest('estado inválido (valores: quiero_escuchar, escuchando, escuchado)');
     }
+    // El cliente solo elige el contenido. Spotify determina todos sus metadatos.
+    // Consultar antes de la transacción evita retener una conexión durante fetch.
+    const officialContent = await catalogService.getDetail(contenido.spotify_id, contenido.tipo);
     return withTransaction(async (client) => {
-      const saved = await catalogService.ensureContenido(contenido, client);
+      const saved = await catalogService.ensureContenido(officialContent, client);
       const item = await libraryRepository.create(userId, saved.id, estado, client);
       await activityRepository.record(
         { userId, tipo: 'agregar_biblioteca', contenidoId: saved.id, detalle: { estado } },

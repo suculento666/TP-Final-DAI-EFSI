@@ -22,7 +22,7 @@ export const ratingsRepository = {
     const content = await catalogRepository.findById(contenidoId, client);
     if (!content) return null;
     const { rows } = await client.query(
-      `INSERT INTO biblioteca_items (usuario_id, contenido_id, estado, puntuacion)
+      `INSERT INTO biblioteca_items AS bi (usuario_id, contenido_id, estado, puntuacion)
        VALUES ($1, $2, 'quiero_escuchar', $3)
        ON CONFLICT (usuario_id, contenido_id) DO UPDATE
          SET puntuacion = EXCLUDED.puntuacion, actualizado_en = now()
@@ -34,7 +34,7 @@ export const ratingsRepository = {
 
   async clearRating(userId, contenidoId, client = pool) {
     const { rows } = await client.query(
-      `UPDATE biblioteca_items SET puntuacion = NULL, actualizado_en = now()
+      `UPDATE biblioteca_items AS bi SET puntuacion = NULL, actualizado_en = now()
        WHERE usuario_id = $1 AND contenido_id = $2
        RETURNING ${BARE_COLUMNS}`,
       [userId, contenidoId]

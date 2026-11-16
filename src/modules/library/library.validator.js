@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
-// Contenido que el frontend ya obtuvo de Spotify y quiere guardar.
+// Solo ID y tipo son necesarios. Los metadatos anteriores se aceptan por
+// compatibilidad, pero se descartan: el servidor los obtiene desde Spotify.
 const contenidoSchema = z
   .object({
     spotify_id: z.string().min(1),
     tipo: z.enum(['track', 'album']),
-    titulo: z.string().min(1),
+    titulo: z.string().min(1).optional(),
     artista: z.string().nullable().optional(),
     album: z.string().nullable().optional(),
     generos: z.array(z.string()).optional(),
@@ -14,7 +15,8 @@ const contenidoSchema = z
     total_canciones: z.number().int().positive().nullable().optional(),
     fecha_lanzamiento: z.string().nullable().optional(),
   })
-  .strict();
+  .strict()
+  .transform(({ spotify_id, tipo }) => ({ spotify_id, tipo }));
 
 export const addItemSchema = z
   .object({
