@@ -1,7 +1,9 @@
 import pool from '../../database/pool.js';
 
 // Estadísticas calculadas dinámicamente con SQL real filtrado por usuario.
-// Cada indicador documenta su fuente.
+// Incluye indicadores de biblioteca y estadísticas musicales tipo Wrapped
+// (artistas, canciones y géneros más escuchados) basadas en la tabla
+// reproducciones (creada en 003_reproducciones.sql).
 
 export const statisticsService = {
   async getSummary(userId) {
@@ -14,6 +16,9 @@ export const statisticsService = {
       resenasRes,
       coleccionesRes,
       mesRes,
+      artistasRes,
+      cancionesRes,
+      generosRepRes,
     ] = await Promise.all([
       // 1. Total de canciones y álbumes en biblioteca (por tipo)
       pool.query(
@@ -72,30 +77,56 @@ export const statisticsService = {
          GROUP BY mes ORDER BY mes`,
         [userId]
       ),
+      // 9. Artistas más escuchados (basado en reproducciones reales/simuladas)
+      pool.query(
+        `SELECT c.artista, count(*)::int AS reproducciones
+         FROM reproducciones r
+         JOIN contenidos c ON c.id = r.contenido_id
+         WHERE r.usuario_id = $1
+         GROUP BY c.artista
+         ORDER BY reproducciones DESC
+         LIMIT 5`,
+        [userId]
+      ),
+      // 10. Canciones más reproducidas (solo tracks)
+      pool.query(
+        `SELECT c.id, c.spotify_id, c.titulo, c.artista, c.portada_url,
+                count(*)::int AS reproducciones
+         FROM reproducciones r
+         JOIN contenidos c ON c.id = r.contenido_id
+         WHERE r.usuario_id = $1 AND c.tipo = 'track'
+         GROUP BY c.id
+         ORDER BY reproducciones DESC
+         LIMIT 5`,
+        [userId]
+      ),
+      // 11. Géneros más escuchados según reproducciones (no solo biblioteca)
+      pool.query(
+        `SELECT g AS genero, count(*)::int AS reproducciones
+         FROM reproducciones r
+         JOIN contenidos c ON c.id = r.contenido_id
+         CROSS JOIN LATERAL unnest(c.generos) AS g
+         WHERE r.usuario_id = $1
+         GROUP BY g
+         ORDER BY reproducciones DESC
+         LIMIT 5`,
+        [userId]
+      ),
     ]);
 
-    // Nota sobre reproducciones: las estadísticas de "artistas más escuchados"
-    // y "canciones más reproducidas" requieren la tabla `reproducciones`
-    // (definida en 003_reproducciones.sql, pendiente de aplicar).
-    // Se informan como pendientes para no inventar valores.
-    const reproduccionesInfo = {
-      nota:
-        'Las estadísticas de artistas y canciones más escuchados requieren ' +
-        'la tabla reproducciones (003_reproducciones.sql). Pendiente de aplicar.',
-      artistas_mas_escuchados: [],
-      canciones_mas_reproducidas: [],
-    };
-
     return {
-      totales_por_tipo: totalRes.rows,
-      distribucion_estados: estadosRes.rows,
-      favoritos: favoritosRes.rows[0]?.total ?? 0,
-      promedio_puntuaciones: promedioRes.rows[0],
-      generos_frecuentes: generosRes.rows,
-      total_resenas: resenasRes.rows[0]?.total ?? 0,
-      colecciones: coleccionesRes.rows,
-      actividad_por_mes: mesRes.rows,
-      reproducciones: reproduccionesInfo,
+      totales_por_tipo:       totalRes.rows,
+      distribucion_estados:   estadosRes.rows,
+      favoritos:              favoritosRes.rows[0]?.total ?? 0,
+      promedio_puntuaciones:  promedioRes.rows[0],
+      generos_frecuentes:     generosRes.rows,
+      total_resenas:          resenasRes.rows[0]?.total ?? 0,
+      colecciones:            coleccionesRes.rows,
+      actividad_por_mes:      mesRes.rows,
+      // Estadísticas musicales tipo Wrapped
+      artistas_mas_escuchados:  artistasRes.rows,
+      canciones_mas_reproducidas: cancionesRes.rows,
+      generos_mas_escuchados:   generosRepRes.rows,
     };
   },
 };

@@ -20,6 +20,10 @@ export const ratingsService = {
     return withTransaction(async (client) => {
       const item = await ratingsRepository.clearRating(userId, contenidoId, client);
       if (!item) throw notFound('No hay puntuación para este contenido');
+      await activityRepository.record(
+        { userId, tipo: 'quitar_puntuacion', contenidoId },
+        client
+      );
       return item;
     });
   },

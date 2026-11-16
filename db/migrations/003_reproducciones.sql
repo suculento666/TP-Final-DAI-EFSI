@@ -11,7 +11,11 @@ CREATE TABLE reproducciones (
    reproducido_en  TIMESTAMPTZ NOT NULL,
    duracion_seg    INTEGER CHECK (duracion_seg IS NULL OR duracion_seg > 0),
    es_simulada     BOOLEAN NOT NULL DEFAULT FALSE,
-   creado_en       TIMESTAMPTZ NOT NULL DEFAULT now()
+   creado_en       TIMESTAMPTZ NOT NULL DEFAULT now(),
+   -- Clave única natural para hacer el seed idempotente.
+   -- Dos registros del mismo usuario+canción en el mismo instante exacto
+   -- se consideran duplicados.
+   UNIQUE (usuario_id, contenido_id, reproducido_en)
 );
 CREATE INDEX idx_reproducciones_usuario_fecha ON reproducciones (usuario_id, reproducido_en);
 CREATE INDEX idx_reproducciones_contenido    ON reproducciones (contenido_id);
