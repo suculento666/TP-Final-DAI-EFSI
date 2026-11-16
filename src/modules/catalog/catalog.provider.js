@@ -118,9 +118,9 @@ function normalizeAlbum(a, genreMap) {
 
 export const spotifyProvider = {
   // tipo: 'track' | 'album' | 'both' (default)
-  async search({ q, tipo = 'both', limit = 20 }) {
+  async search({ q, tipo = 'both', limit = 10 }) {
     if (!q || !q.trim()) return { tracks: [], albums: [] };
-    const capped = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 50);
+    const capped = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 10);
     const type =
       tipo === 'track' ? 'track' : tipo === 'album' ? 'album' : 'track,album';
 

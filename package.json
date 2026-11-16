@@ -5,10 +5,9 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "migrate": "node db/migrate.js",
-
+    "start": "node --use-system-ca server.js",
+    "dev": "nodemon --exec \"node --use-system-ca\" server.js",
+    "migrate": "node db/migrate.js"
   },
   "engines": {
     "node": ">=20.0.0"
