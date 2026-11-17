@@ -1,14 +1,10 @@
--- 002 · Datos de prueba y cuenta de demostración.
--- Usuario demo: email demo@sonora.app / password: demo1234
--- Hash generado con bcryptjs.hash('demo1234', 10). Verificado con bcryptjs.compare.
--- No ejecutar sobre una base con datos reales.
 BEGIN;
 
 INSERT INTO usuarios (username, email, password_hash, avatar_url, bio, generos_preferidos)
 VALUES (
   'demo',
   'demo@sonora.app',
-  '$2a$10$mz3YQMbkK17pTK/jjboKzeICt4d81FZBXeuzqIVoIYkH24JCvu2oK',
+  '2a10$XowKxIoILm.u0Q7.3CpkqOwFMzPEBJm9nfHfSJjjnLB4APzPuqkYe',
   'https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553d50e8',
   'Amante de la música. Siempre buscando algo nuevo.',
   ARRAY['pop', 'indie', 'rock']
@@ -16,7 +12,7 @@ VALUES (
 (
   'otro',
   'otro@sonora.app',
-  '$2a$10$XowKxIoILm.u0Q7.3CpkqOwFMzPEBJm9nfHfSJjjnLB4APzPuqkYe',
+  '2a10$XowKxIoILm.u0Q7.3CpkqOwFMzPEBJm9nfHfSJjjnLB4APzPuqkYe',
   NULL,
   'Usuario de prueba para aislamiento.',
   '{}'
@@ -143,4 +139,105 @@ JOIN (VALUES
   ('3AJwUDP919kvQ9QcozQPxg', 'crear_reseña',        '3 days')
 ) AS data(sid, tipo, hace) ON c.spotify_id = data.sid;
 
+-- ─────────────────────────────────────────────────────────────────────────
+-- VERIFICACIONES: la cuenta demo tiene que cumplir los mínimos de la consigna.
+-- Si algún chequeo falla, RAISE EXCEPTION aborta la transacción y NO se
+-- guarda nada del seed (migrate.js muestra el mensaje y sale con error).
+--
+-- Mínimos (sección 5 de la consigna):
+--   perfil con avatar, bio y preferencias · >= 10 contenidos en la biblioteca
+--   >= 5 favoritos · >= 3 estados distintos · >= 5 puntuaciones · >= 3 reseñas
+--   >= 3 colecciones · actividad reciente cargada
+-- Además se comprueba que ningún par (colección, contenido) del seed se haya
+-- perdido en los JOIN: si cambiás los pares de arriba, actualizá v_pares_esperados.
+-- ─────────────────────────────────────────────────────────────────────────
+DO verificacion
+DECLARE
+  v_uid               INTEGER;
+  v_n                 INTEGER;
+  v_pares_esperados   CONSTANT INTEGER := 8;   -- filas del VALUES de coleccion_items
+  v_vacias            TEXT;
+BEGIN
+  SELECT id INTO v_uid FROM usuarios WHERE email = 'demo@sonora.app';
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Seed inválido: no existe el usuario demo (demo@sonora.app).';
+  END IF;
+
+  -- Perfil: avatar, bio y preferencias
+  IF NOT EXISTS (
+    SELECT 1 FROM usuarios
+    WHERE id = v_uid
+      AND coalesce(trim(avatar_url), '') <> ''
+      AND coalesce(trim(bio), '') <> ''
+      AND cardinality(generos_preferidos) > 0
+  ) THEN
+    RAISE EXCEPTION 'Seed inválido: el perfil demo necesita avatar, bio y generos_preferidos.';
+  END IF;
+
+  -- Biblioteca
+  SELECT COUNT(*) INTO v_n FROM biblioteca_items WHERE usuario_id = v_uid;
+  IF v_n < 10 THEN
+    RAISE EXCEPTION 'Seed inválido: la biblioteca demo tiene % contenidos (mínimo 10).', v_n;
+  END IF;
+
+  -- Favoritos
+  SELECT COUNT(*) INTO v_n FROM biblioteca_items WHERE usuario_id = v_uid AND es_favorito;
+  IF v_n < 5 THEN
+    RAISE EXCEPTION 'Seed inválido: la cuenta demo tiene % favoritos (mínimo 5).', v_n;
+  END IF;
+
+  -- Estados distintos
+  SELECT COUNT(DISTINCT estado) INTO v_n FROM biblioteca_items WHERE usuario_id = v_uid;
+  IF v_n < 3 THEN
+    RAISE EXCEPTION 'Seed inválido: los contenidos demo usan % estados distintos (mínimo 3).', v_n;
+  END IF;
+
+  -- Puntuaciones
+  SELECT COUNT(*) INTO v_n FROM biblioteca_items WHERE usuario_id = v_uid AND puntuacion IS NOT NULL;
+  IF v_n < 5 THEN
+    RAISE EXCEPTION 'Seed inválido: la cuenta demo tiene % puntuaciones (mínimo 5).', v_n;
+  END IF;
+
+  -- Reseñas
+  SELECT COUNT(*) INTO v_n FROM resenas WHERE usuario_id = v_uid;
+  IF v_n < 3 THEN
+    RAISE EXCEPTION 'Seed inválido: la cuenta demo tiene % reseñas (mínimo 3).', v_n;
+  END IF;
+
+  -- Colecciones
+  SELECT COUNT(*) INTO v_n FROM colecciones WHERE usuario_id = v_uid;
+  IF v_n < 3 THEN
+    RAISE EXCEPTION 'Seed inválido: la cuenta demo tiene % colecciones (mínimo 3).', v_n;
+  END IF;
+
+  -- Items de colecciones: todos los pares del seed se resolvieron
+  SELECT COUNT(*) INTO v_n
+  FROM coleccion_items ci
+  JOIN colecciones col ON col.id = ci.coleccion_id
+  WHERE col.usuario_id = v_uid;
+  IF v_n <> v_pares_esperados THEN
+    RAISE EXCEPTION 'Seed inválido: coleccion_items tiene % filas y se esperaban % (algún JOIN no resolvió un spotify_id o un nombre de colección).',
+      v_n, v_pares_esperados;
+  END IF;
+
+  -- Ninguna colección vacía
+  SELECT string_agg(col.nombre, ', ') INTO v_vacias
+  FROM colecciones col
+  WHERE col.usuario_id = v_uid
+    AND NOT EXISTS (SELECT 1 FROM coleccion_items ci WHERE ci.coleccion_id = col.id);
+  IF v_vacias IS NOT NULL THEN
+    RAISE EXCEPTION 'Seed inválido: colecciones demo sin contenidos: %.', v_vacias;
+  END IF;
+
+  -- Actividad reciente
+  SELECT COUNT(*) INTO v_n FROM actividad WHERE usuario_id = v_uid;
+  IF v_n = 0 THEN
+    RAISE EXCEPTION 'Seed inválido: la cuenta demo no tiene actividad.';
+  END IF;
+
+  RAISE NOTICE 'Seed verificado: cuenta demo completa (perfil, biblioteca, favoritos, puntuaciones, reseñas, colecciones y actividad).';
+END
+verificacion;
+
 COMMIT;
+
