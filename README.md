@@ -1,54 +1,63 @@
 # MUSICMAN — My Collection
 
-**Trabajo Práctico Final · DAI / EFSI 2026 · ORT**
+**Trabajo Práctico Final · DAI / EFSI · ORT 2026**
 
-## 1. Descripción
+MUSICMAN es una aplicación web para explorar música y administrar una biblioteca personal. Permite guardar canciones y álbumes, organizarlos por estado, marcar favoritos, asignar puntuaciones, escribir reseñas, crear colecciones y consultar estadísticas personales.
 
-MUSICMAN es una aplicación web para explorar música y gestionar una biblioteca personal. Permite guardar canciones y álbumes, organizarlos por estado (quiero escuchar / escuchando / escuchado), marcar favoritos, puntuar, escribir reseñas, crear colecciones y registrar reproducciones. Incluye estadísticas dinámicas y un resumen musical personal estilo Spotify Wrapped.
+## 1. Integrantes y responsabilidades
 
-## 2. Integrantes y responsabilidades
+| Integrante | Responsabilidad |
+|---|---|
+| Fidel Goldsman | Backend |
+| Ciro Perazzo | Frontend |
+| Agustín Aiello | Base de datos |
+| Ignacio Kohn | QA / Testing |
 
-Fidel Goldsman: Backend
-Ciro Perazzo: Frontend
-Agustín Aiello: BD
-Ignacio Kohn: QA Tester
+## 2. Repositorios y despliegue
 
-## 3. Tecnologías
+- **Aplicación:** [URL pública de la aplicación]
+- **Frontend:** https://github.com/CiroPerazzo/TPFINAL-frontend
+- **Backend:** https://github.com/suculento666/TP-Final-DAI-EFSI
+- **Figma:** [[LINK](https://www.figma.com/design/G1RyXAZtJXpfVL4aAhOHIk/My-Collection-%E2%80%94-dise%C3%B1o-musical?node-id=0-1&t=p1GdJ4t54yxEzZYD-1)]
+- **Trello:** [[LINK](https://trello.com/b/S8CQYIuy/final-dai-efsi)]
 
-- **Frontend:** React, React Router, Axios
-- **Backend:** Node.js, Express
-- **Base de datos:** PostgreSQL (acceso directo con `pg`, sin ORM)
-- **Autenticación:** JWT + cookie HttpOnly, bcrypt
-- **API externa:** Spotify Web API (Client Credentials)
-- **Diseño:** Figma
+El desarrollo se organiza mediante ramas individuales y Pull Requests para integrar los aportes de cada integrante.
 
-## 4. Arquitectura
+## 3. Tecnologías y arquitectura
 
-El frontend consulta Spotify para explorar canciones y álbumes, y se comunica con el backend propio para gestionar los datos personales de cada usuario.
+| Componente | Tecnologías |
+|---|---|
+| Frontend | React, Vite, React Router |
+| Backend | Node.js, Express |
+| Base de datos | PostgreSQL (`pg`) |
+| Validaciones | Zod |
+| Autenticación | JWT, cookies HttpOnly y bcryptjs |
+| API externa | Spotify Web API |
 
-El backend está organizado en módulos independientes: autenticación, usuarios, catálogo, biblioteca, favoritos, puntuaciones, reseñas, colecciones, actividad, reproducciones y estadísticas. Cada módulo tiene sus rutas, controlador, servicio, repositorio y validador.
+**Arquitectura:**
 
-PostgreSQL almacena toda la información de los usuarios. Cada operación privada filtra por el `usuario_id` extraído del JWT, nunca por un valor enviado desde el cliente.
+1. El frontend presenta la aplicación y consume la API REST del backend.
+2. El backend gestiona la lógica de negocio, autenticación y consultas a PostgreSQL.
+3. El backend consulta Spotify Web API para buscar canciones y álbumes.
+4. PostgreSQL almacena los usuarios, sus bibliotecas y toda su información personal.
 
-## 5. Modelo de datos
+Las credenciales de Spotify se mantienen exclusivamente en el backend.
 
-| Tabla               | Responsabilidad                                     |
-|---------------------|-----------------------------------------------------|
-| `usuarios`          | Cuentas y perfiles                                  |
-| `contenidos`        | Canciones y álbumes (catálogo compartido)           |
-| `biblioteca_items`  | Estado, favoritos y puntuaciones por usuario        |
-| `resenas`           | Reseñas personales (una por usuario y contenido)    |
-| `colecciones`       | Colecciones creadas por los usuarios                |
-| `coleccion_items`   | Contenidos de cada colección                        |
-| `actividad`         | Historial de acciones del usuario                   |
-| `reproducciones`    | Historial de reproducciones (reales o simuladas)    |
-| `schema_migrations` | Registro interno de migraciones aplicadas           |
+## 4. Funcionalidades principales
 
-La estructura completa está en `db/migrations/001_init_v2.sql` y `003_reproducciones.sql`.
+- Registro, inicio y cierre de sesión.
+- Búsqueda y detalle de canciones y álbumes.
+- Biblioteca personal con estados: quiero escuchar, escuchando y escuchado.
+- Favoritos, puntuaciones y reseñas.
+- Creación y administración de colecciones.
+- Historial de actividad y reproducciones.
+- Estadísticas personales y resumen musical estilo Wrapped.
 
-## 6. Instalación local
+## 5. Instalación y ejecución local
 
-**Requisitos:** Node.js >= 20, npm, PostgreSQL.
+**Requisitos:** Node.js 20 o superior, npm y PostgreSQL.
+
+### Backend
 
 ```bash
 git clone https://github.com/suculento666/TP-Final-DAI-EFSI.git
@@ -56,42 +65,20 @@ cd TP-Final-DAI-EFSI
 npm install
 ```
 
-Crear el archivo `.env` en la raíz del proyecto:
+Crear una base de datos PostgreSQL llamada `my_collection`.
 
-```env
-PORT=3000
-NODE_ENV=development
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=my_collection
-DB_USER=postgres
-DB_PASSWORD=tu_password_de_postgres
-JWT_SECRET=una_clave_secreta_de_al_menos_32_caracteres_aqui
-JWT_EXPIRES_IN=7d
-FRONTEND_URL=http://localhost:5173
-SPOTIFY_CLIENT_ID=tu_client_id_de_spotify
-SPOTIFY_CLIENT_SECRET=tu_client_secret_de_spotify
-```
+Copiar `.env.example` a `.env` y completar las variables necesarias.
 
-> `JWT_SECRET` debe tener al menos 32 caracteres o el servidor no arranca.
-> `DB_PASSWORD` es obligatorio. Las credenciales de Spotify se obtienen en [developer.spotify.com](https://developer.spotify.com/dashboard).
-
-Crear la base de datos y ejecutar las migraciones:
+Ejecutar las migraciones e iniciar el servidor:
 
 ```bash
-createdb my_collection
 npm run migrate
-```
-
-Iniciar el servidor en modo desarrollo:
-
-```bash
 npm run dev
 ```
 
-**El comando `npm run migrate` es idempotente.** Registra cada migración aplicada en la tabla `schema_migrations` y solo ejecuta las que todavía no fueron aplicadas. Se puede correr varias veces sin riesgo.
+El backend queda disponible en `http://localhost:3000`.
 
-Para resetear la base desde cero:
+### Frontend
 
 ```bash
 dropdb my_collection && createdb my_collection && npm run migrate
@@ -424,122 +411,95 @@ Detalle de la colección con sus contenidos.
 { "success": true, "data": { "collection": { "id": 1, "nombre": "Clásicos de Rock" }, "items": [ { "titulo": "Mr. Brightside" } ] } }
 ```
 
-#### `PATCH /api/collections/:id` 🔒
-Edita nombre, descripción o color.
+Copiar `.env.example` a `.env`. Para desarrollo local, el proxy apunta por defecto al backend en `http://localhost:3000`.
 
-**Body:** `{ "nombre": "Nuevo nombre" }`
+Iniciar React:
 
-**Respuesta 200:**
-```json
-{ "success": true, "data": { "collection": { "id": 1, "nombre": "Nuevo nombre" } } }
+```bash
+npm run dev
 ```
 
-#### `DELETE /api/collections/:id` 🔒
-Elimina la colección.
+La aplicación queda disponible en `http://localhost:5173`.
 
-**Respuesta 200:**
-```json
-{ "success": true, "data": { "id": 1 } }
-```
+## 6. Variables de entorno
 
-#### `POST /api/collections/:id/items` 🔒
-Agrega un contenido a la colección.
+### Backend
 
-**Body:** `{ "contenidoId": 5 }`
+| Variable | Descripción |
+|---|---|
+| `PORT` | Puerto del servidor |
+| `NODE_ENV` | Entorno de ejecución |
+| `DB_HOST`, `DB_PORT` | Dirección y puerto de PostgreSQL |
+| `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Conexión a la base de datos |
+| `JWT_SECRET` | Secreto para firmar los tokens (mínimo 32 caracteres) |
+| `JWT_EXPIRES_IN` | Duración del token |
+| `FRONTEND_URL` | URL del frontend para CORS |
+| `SPOTIFY_CLIENT_ID` | Identificador de la aplicación Spotify |
+| `SPOTIFY_CLIENT_SECRET` | Secreto de la aplicación Spotify |
 
-**Respuesta 201:**
-```json
-{ "success": true, "data": { "added": true } }
-```
+### Frontend
 
-#### `DELETE /api/collections/:id/items/:contenidoId` 🔒
-Quita un contenido de la colección.
+| Variable | Descripción |
+|---|---|
+| `VITE_API_URL` | URL base de la API (por defecto `/api`) |
+| `API_PROXY_TARGET` | Destino del proxy local de Vite |
 
-**Respuesta 200:**
-```json
-{ "success": true, "data": { "removed": true } }
-```
+Los archivos `.env` contienen información privada y no deben subirse al repositorio.
 
----
+## 7. Endpoints del backend
 
-### Actividad — `/api/activity`
+Todas las rutas están bajo el prefijo `/api`. Las rutas marcadas como protegidas requieren autenticación.
 
-#### `GET /api/activity` 🔒
-Historial de acciones del usuario.
+| Módulo | Endpoints |
+|---|---|
+| Health | `GET /health` |
+| Autenticación | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` |
+| Usuarios | `GET /users/me`, `PATCH /users/me` |
+| Catálogo | `GET /catalog/search`, `GET /catalog/:spotifyId` |
+| Biblioteca | `GET /library`, `POST /library`, `PATCH /library/:contenidoId`, `DELETE /library/:contenidoId` |
+| Favoritos | `GET /favorites`, `POST /favorites/:contenidoId`, `DELETE /favorites/:contenidoId` |
+| Puntuaciones | `GET /ratings`, `PUT /ratings/:contenidoId`, `DELETE /ratings/:contenidoId` |
+| Reseñas | `GET /reviews`, `GET /reviews/:contenidoId`, `POST /reviews/:contenidoId`, `PATCH /reviews/:contenidoId`, `DELETE /reviews/:contenidoId` |
+| Colecciones | `GET /collections`, `POST /collections`, `GET /collections/:id`, `PATCH /collections/:id`, `DELETE /collections/:id`, `POST /collections/:id/items`, `DELETE /collections/:id/items/:contenidoId` |
+| Actividad | `GET /activity` |
+| Estadísticas | `GET /statistics` |
+| Reproducciones | `GET /plays`, `POST /plays`, `GET /plays/wrapped` |
 
-**Query:** `?limit=50&tipo=agregar_biblioteca`
+Los endpoints privados están protegidos mediante middleware de autenticación y operan sobre los datos del usuario autenticado.
 
-**Respuesta 200:**
-```json
-{ "success": true, "data": { "items": [ { "id": 1, "tipo": "agregar_biblioteca", "contenido_id": 5, "creado_en": "2026-11-01T20:00:00Z" } ] } }
-```
+## 8. Modelo de datos
 
----
+La base de datos utiliza PostgreSQL y se organiza en las siguientes tablas:
 
-### Reproducciones — `/api/plays`
+| Tabla | Responsabilidad |
+|---|---|
+| `usuarios` | Cuentas y perfiles |
+| `contenidos` | Catálogo de canciones y álbumes |
+| `biblioteca_items` | Biblioteca, estados, favoritos y puntuaciones |
+| `resenas` | Reseñas de los usuarios |
+| `colecciones` | Colecciones personales |
+| `coleccion_items` | Contenidos asociados a cada colección |
+| `actividad` | Historial de acciones |
+| `reproducciones` | Historial de reproducciones reales o simuladas |
 
-#### `GET /api/plays/wrapped` 🔒
-Resumen tipo Spotify Wrapped: artistas top, canciones top, géneros top y hábitos de escucha por hora (hora Argentina).
+Las relaciones entre usuarios y sus datos personales se gestionan mediante claves foráneas. Las migraciones se encuentran en `db/migrations/` y se ejecutan mediante `npm run migrate`.
 
-**Respuesta 200:**
-```json
-{
-  "success": true,
-  "data": {
-    "artistas_mas_escuchados": [ { "artista": "The Killers", "reproducciones": 5 } ],
-    "canciones_mas_reproducidas": [ { "titulo": "Mr. Brightside", "artista": "The Killers", "reproducciones": 5 } ],
-    "generos_mas_escuchados": [ { "genero": "indie rock", "reproducciones": 9 } ],
-    "habitos_por_hora": [ { "hora": 22, "reproducciones": 7 } ]
-  }
-}
-```
+## 9. Autenticación y seguridad
 
-#### `POST /api/plays` 🔒
-Registra una reproducción.
+- Las contraseñas se almacenan mediante hash bcrypt.
+- La autenticación utiliza JWT almacenado en una cookie HttpOnly.
+- Las rutas privadas verifican la sesión mediante middleware.
+- El backend identifica al usuario desde el token, no desde un ID enviado por el cliente.
+- Las consultas privadas filtran los datos por el usuario autenticado.
+- Las credenciales y secretos se almacenan en variables de entorno.
 
-**Body:** `{ "contenidoId": 5, "duracionSeg": 223 }`
+## 10. Datos de demostración e integración
 
-**Respuesta 201:**
-```json
-{ "success": true, "data": { "play": { "id": 24, "contenido_id": 5, "reproducido_en": "2026-11-13T23:00:00Z" } } }
-```
+Las migraciones incluyen datos iniciales para una cuenta de demostración: biblioteca con canciones y álbumes, favoritos, puntuaciones, reseñas, colecciones, actividad y reproducciones simuladas.
 
-#### `GET /api/plays` 🔒
-Historial de reproducciones del usuario.
+Las credenciales de acceso se entregan por el canal indicado por los docentes y no se publican en el repositorio.
 
-**Query:** `?limit=50&offset=0`
-
-**Respuesta 200:**
-```json
-{ "success": true, "data": { "plays": [ { "id": 1, "titulo": "Mr. Brightside", "reproducido_en": "2026-11-11T23:00:00Z" } ] } }
-```
-
----
-
-### Estadísticas — `/api/statistics`
-
-#### `GET /api/statistics` 🔒
-Devuelve 11 indicadores calculados en tiempo real con SQL.
-
-**Respuesta 200:**
-```json
-{
-  "success": true,
-  "data": {
-    "totales_por_tipo": [ { "tipo": "track", "total": 8 }, { "tipo": "album", "total": 4 } ],
-    "distribucion_estados": [ { "estado": "escuchado", "total": 6 } ],
-    "favoritos": 5,
-    "promedio_puntuaciones": { "promedio": "4.50", "puntuados": 8 },
-    "generos_frecuentes": [ { "genero": "indie rock", "total": 5 } ],
-    "total_resenas": 3,
-    "colecciones": [ { "id": 1, "nombre": "Clásicos de Rock", "contenidos": 3 } ],
-    "actividad_por_mes": [ { "mes": "2026-11", "acciones": 12 } ],
-    "artistas_mas_escuchados": [ { "artista": "The Killers", "reproducciones": 5 } ],
-    "canciones_mas_reproducidas": [ { "titulo": "Mr. Brightside", "reproducciones": 5 } ],
-    "generos_mas_escuchados": [ { "genero": "indie rock", "reproducciones": 9 } ]
-  }
-}
-```
+El frontend está integrado con el backend para los flujos de autenticación, búsqueda de catálogo, biblioteca, favoritos, puntuaciones, reseñas, colecciones y estadísticas.
 
 **Qué verificar**
 
@@ -549,64 +509,22 @@ Devuelve 11 indicadores calculados en tiempo real con SQL.
 
 ---
 
-### Health check
+## 11. Compilación y pruebas
 
-#### `GET /api/health`
-Verifica que el servidor esté en línea.
+**Frontend:**
 
-**Respuesta 200:**
-```json
-{ "success": true, "data": { "status": "ok", "timestamp": "2026-11-13T12:00:00.000Z", "environment": "production" } }
+```bash
+npm run build
+npm run preview
 ```
 
----
-
-## 8. Autenticación y seguridad
-
-- JWT con expiración configurable (por defecto 7 días).
-- Token almacenado en cookie HttpOnly, Secure y SameSite.
-- Contraseñas con hash bcrypt (10 rondas). Nunca se devuelve `password_hash` al cliente.
-- Las rutas privadas verifican el JWT en el servidor mediante middleware.
-- Los datos de cada usuario están aislados: ninguna consulta permite acceder a información de otro usuario.
-- `POST /api/auth/logout` no requiere token válido para poder cerrar sesión aunque el token haya vencido.
-
-## 9. Estadísticas
-
-El endpoint `/api/statistics` calcula 11 indicadores dinámicos a partir de los datos reales del usuario en PostgreSQL. Ningún valor es fijo.
-
-El endpoint `/api/plays/wrapped` devuelve el resumen musical estilo Spotify Wrapped: artistas más escuchados, canciones más reproducidas, géneros predominantes y hábitos de escucha por hora del día (en hora de Argentina, UTC-3).
-
-## 10. Datos de demostración
-
-Las migraciones cargan automáticamente una cuenta demo con:
-
-- Perfil con avatar, biografía y géneros preferidos.
-- 12 contenidos en la biblioteca (canciones y álbumes).
-- 5 favoritos y contenidos en los 3 estados disponibles.
-- 8 puntuaciones y 3 reseñas.
-- 3 colecciones con contenidos asignados.
-- Actividad reciente.
-- 23 reproducciones simuladas con hábitos realistas (horario nocturno argentino).
-
-Las credenciales se entregan por el canal indicado por los docentes.
-
-## 11. Pruebas
+**Backend:**
 
 ```bash
 node --test src/tests/unit/*.test.js
 ```
 
-Pruebas unitarias para hash de contraseñas, JWT, validadores de todos los módulos y manejo de errores. Las operaciones que dependen de PostgreSQL se verifican con la base en funcionamiento.
-
-## 12. Despliegue
-
-- **Frontend:** [URL]
-- **Backend:** [URL]
-- **Repositorio:** https://github.com/suculento666/TP-Final-DAI-EFSI
-- **Figma:** [LINK]
-- **Trello:** [LINK]
-
-El desarrollo se organiza mediante ramas individuales y Pull Requests. Trello se usa para asignar responsables y hacer seguimiento de las tareas.
+La documentación de endpoints y los repositorios vinculados permiten consultar la implementación de cada componente.
 
 ---
 
