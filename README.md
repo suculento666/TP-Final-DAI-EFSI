@@ -99,14 +99,24 @@ dropdb my_collection && createdb my_collection && npm run migrate
 
 ## 7. Endpoints de la API
 
+Las rutas usan el prefijo `/api`. El símbolo 🔒 indica que la ruta requiere
+un JWT válido en la cookie `mc_token` o en el encabezado
+`Authorization: Bearer <token>`. Una solicitud sin token válido devuelve
+`401` con el código `UNAUTHORIZED`.
 
+Para verificar los endpoints localmente, usá `http://localhost:3000` (o el puerto
+configurado) y conservá la cookie que devuelve el registro o el login. En el
+cliente de pruebas podés confirmar la sesión con `GET /api/auth/me`. Las
+solicitudes con JSON usan `Content-Type: application/json`. Una entrada que
+falla la validación devuelve `400` con la estructura
+`{ "success": false, "error": { "code": "VALIDATION_ERROR", "message": "..." } }`.
 
 ---
 
 ### Autenticación — `/api/auth`
 
 #### `POST /api/auth/register`
-Registra un nuevo usuario.
+Registra un nuevo usuario e inicia sesión con la cookie HttpOnly `mc_token`.
 
 **Body:**
 ```json
@@ -116,6 +126,12 @@ Registra un nuevo usuario.
 ```json
 { "success": true, "data": { "user": { "id": 1, "username": "demo", "email": "demo@sonora.app" } } }
 ```
+
+**Qué verificar**
+
+- Con datos nuevos, devuelve `201`, el usuario público en `data.user` y la cookie en `Set-Cookie`. El email se guarda en minúsculas y el cuerpo omite el JWT y el hash de la contraseña.
+- Devuelve `400` si el nombre, una vez recortado, queda fuera de 3 a 30 caracteres, si el email es inválido, si la contraseña queda fuera de 8 a 72 caracteres o si la confirmación falta o no coincide.
+- Devuelve `409` con `EMAIL_TAKEN` o `USERNAME_TAKEN` al reutilizar el correo o el nombre de usuario, respectivamente. Probá cada caso con el otro campo disponible.
 
 #### `POST /api/auth/login`
 Inicia sesión. Establece la cookie `mc_token` y devuelve el usuario.
@@ -128,6 +144,11 @@ Inicia sesión. Establece la cookie `mc_token` y devuelve el usuario.
 ```json
 { "success": true, "data": { "user": { "id": 1, "username": "demo", "email": "demo@sonora.app" } } }
 ```
+
+**Qué verificar**
+
+- Con credenciales válidas y sin sesión previa, devuelve `200`, el usuario público en `data.user` y una cookie HttpOnly `mc_token`. También acepta el email registrado con mayúsculas o espacios alrededor.
+- Devuelve `400` si el email es inválido o si falta la contraseña o está vacía. Devuelve `401` con `BAD_CREDENTIALS` tanto para un correo inexistente como para una contraseña incorrecta.
 
 #### `POST /api/auth/logout`
 Cierra sesión borrando la cookie. No requiere autenticación.
@@ -176,12 +197,18 @@ Edita el perfil. Todos los campos son opcionales (parche parcial).
 #### `GET /api/catalog/search` 🔒
 Busca canciones y/o álbumes en Spotify.
 
-**Query:** `?q=radiohead&tipo=both&limit=20` (tipo: `track` | `album` | `both`)
+**Query:** `?q=radiohead&tipo=both&limit=10`
 
-**Respuesta 200:**
+**Respuesta 200 sin coincidencias:**
 ```json
-{ "success": true, "data": { "tracks": [...], "albums": [...] } }
+{ "success": true, "data": { "tracks": [], "albums": [] } }
 ```
+
+**Qué verificar**
+
+- Con sesión y un término como `radiohead`, devuelve `200` con los arreglos `data.tracks` y `data.albums`. Con `tipo=track`, `albums` queda vacío. Con `tipo=album`, `tracks` queda vacío. El tipo predeterminado es `both`.
+- `limit` admite dígitos y su valor efectivo se limita a 10 por tipo. Si se omite o se envía `0`, se usa 10.
+- Devuelve `400` si falta `q`, si se envía vacío, si `tipo` es inválido, si `limit` contiene caracteres distintos de dígitos o si se agrega un parámetro desconocido. Un `q` compuesto solo por espacios devuelve ambos arreglos vacíos con `200`.
 
 #### `GET /api/catalog/:spotifyId` 🔒
 Devuelve el detalle de una canción o álbum por su ID de Spotify. Persiste el contenido en la base.
@@ -198,7 +225,7 @@ Devuelve el detalle de una canción o álbum por su ID de Spotify. Persiste el c
 ### Biblioteca — `/api/library`
 
 #### `GET /api/library` 🔒
-Lista la biblioteca del usuario. Soporta filtros.
+Lista la biblioteca del usuario autenticado.
 
 **Query:** `?estado=escuchado&favorito=true&orderBy=titulo`
 
@@ -207,17 +234,29 @@ Lista la biblioteca del usuario. Soporta filtros.
 { "success": true, "data": { "items": [ { "id": 1, "estado": "escuchado", "es_favorito": true, "puntuacion": 5, "spotify_id": "...", "titulo": "Mr. Brightside" } ] } }
 ```
 
+**Qué verificar**
+
+- Devuelve `200` con `data.items`. Una biblioteca vacía devuelve `[]`. Con dos cuentas, verificá que cada una vea solo sus propios ítems.
+- `estado` admite `quiero_escuchar`, `escuchando` y `escuchado`. `favorito` admite `true` y `false`. Si se combinan, los resultados cumplen ambos filtros.
+- `orderBy` admite `agregado_en`, `actualizado_en` y `titulo`. El orden es descendente y por defecto usa `agregado_en`. Un valor inválido o un parámetro desconocido devuelve `400`.
+
 #### `POST /api/library` 🔒
-Agrega un contenido a la biblioteca. Los metadatos vienen del cliente (ya obtenidos de Spotify).
+Agrega un contenido a la biblioteca con los metadatos que el servidor obtiene de Spotify. Si ya está guardado, actualiza su estado.
 
 **Body:**
 ```json
-{ "contenido": { "spotify_id": "4iV5W9uYEdYUVa79Axb7Rh", "tipo": "track", "titulo": "Mr. Brightside", "artista": "The Killers" }, "estado": "quiero_escuchar" }
+{ "contenido": { "spotify_id": "4iV5W9uYEdYUVa79Axb7Rh", "tipo": "track" }, "estado": "quiero_escuchar" }
 ```
 **Respuesta 201:**
 ```json
-{ "success": true, "data": { "item": { "id": 1, "estado": "quiero_escuchar", "contenido": { ... } } } }
+{ "success": true, "data": { "item": { "id": 1, "contenido_id": 5, "estado": "quiero_escuchar", "contenido": { "id": 5, "spotify_id": "4iV5W9uYEdYUVa79Axb7Rh", "tipo": "track" } } } }
 ```
+
+**Qué verificar**
+
+- Con un ID de Spotify válido y su tipo (`track` o `album`), devuelve `201` con `data.item` y los metadatos persistidos en `data.item.contenido`. Si se omite `estado`, usa `quiero_escuchar`. Confirmá el alta con `GET /api/library`.
+- Repetir el alta con otro estado devuelve `201` y deja un único ítem con el estado actualizado. Si se envía un `titulo` válido en el cuerpo, se guarda el título de Spotify.
+- Devuelve `400` si falta `contenido`, si el `spotify_id` está vacío o si el tipo o el estado son inválidos. Si Spotify indica que el contenido no existe, devuelve `404` con `SPOTIFY_NOT_FOUND`.
 
 #### `PATCH /api/library/:contenidoId` 🔒
 Cambia el estado de un ítem.
@@ -256,6 +295,12 @@ Marca un contenido como favorito. Si no está en la biblioteca, lo agrega autom�
 ```json
 { "success": true, "data": { "item": { "es_favorito": true } } }
 ```
+
+**Qué verificar**
+
+- Enviá la solicitud sin cuerpo y usá el ID interno del contenido (`data.item.contenido_id` al guardarlo en la biblioteca). Devuelve `200` con `data.item.es_favorito: true`. Confirmalo con `GET /api/library?favorito=true`.
+- Con un contenido persistido que todavía no está en la biblioteca de la cuenta autenticada, crea el ítem con estado `quiero_escuchar`. Si ya estaba guardado, conserva su estado. Repetir el POST mantiene el favorito marcado.
+- Devuelve `400` si `contenidoId` no representa un entero positivo y `404` si el ID válido no existe en el catálogo local.
 
 #### `DELETE /api/favorites/:contenidoId` 🔒
 Quita de favoritos.
@@ -364,6 +409,12 @@ Crea una colección.
 ```json
 { "success": true, "data": { "collection": { "id": 4, "nombre": "Mi playlist" } } }
 ```
+
+**Qué verificar**
+
+- Con un nombre de 1 a 100 caracteres después de quitar espacios de los extremos, devuelve `201` con `data.collection`. Confirmá que figura en `GET /api/collections` para la misma cuenta.
+- `descripcion` y `color` admiten omisión o `null`. Devuelve `400` para un nombre vacío o demasiado largo, una descripción de más de 300 caracteres, un color distinto de `#RRGGBB` o campos desconocidos.
+- Devuelve `409` con `COLLECTION_NAME_TAKEN` al repetir el nombre en la misma cuenta. Otra cuenta puede crear una colección con ese nombre.
 
 #### `GET /api/collections/:id` 🔒
 Detalle de la colección con sus contenidos.
@@ -490,6 +541,12 @@ Devuelve 11 indicadores calculados en tiempo real con SQL.
 }
 ```
 
+**Qué verificar**
+
+- Devuelve `200` con los 11 indicadores de la cuenta autenticada. Con una cuenta nueva, los listados son `[]`, `favoritos` y `total_resenas` valen `0` y `promedio_puntuaciones` vale `{ "promedio": null, "puntuados": 0 }`.
+- Compará dos respuestas tras agregar un contenido, marcarlo como favorito y crear una colección. Deben reflejar esos cambios en el total por tipo, la distribución por estado, el total de favoritos y la lista de colecciones. Los datos de otra cuenta quedan fuera del resumen.
+- La actividad se agrupa por mes a partir de los últimos seis meses. Los rankings de artistas, canciones y géneros escuchados se calculan a partir de las reproducciones y devuelven hasta cinco filas cada uno.
+
 ---
 
 ### Health check
@@ -536,7 +593,7 @@ Las credenciales se entregan por el canal indicado por los docentes.
 ## 11. Pruebas
 
 ```bash
-npm test
+node --test src/tests/unit/*.test.js
 ```
 
 Pruebas unitarias para hash de contraseñas, JWT, validadores de todos los módulos y manejo de errores. Las operaciones que dependen de PostgreSQL se verifican con la base en funcionamiento.
