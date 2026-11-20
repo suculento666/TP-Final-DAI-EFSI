@@ -8,11 +8,10 @@ MUSICMAN es una aplicación web para explorar música y gestionar una biblioteca
 
 ## 2. Integrantes y responsabilidades
 
-| Integrante        | Responsabilidad principal |
-|-------------------|---------------------------|
-| Fidel Goldsman    | Backend                   |
-| Agustín [apellido]| [Responsabilidad]         |
-| Ignacio [apellido]| [Responsabilidad]         |
+Fidel Goldsman: Backend
+Ciro Perazzo: Frontend
+Agustín Aiello: BD
+Ignacio Kohn: QA Tester
 
 ## 3. Tecnologías
 
