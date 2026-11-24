@@ -62,7 +62,13 @@ try {
   assert.equal(results[0].title, fixture.titulo);
   const detail = await music.detail(fixture.spotify_id, 'track');
   assert.equal(typeof detail.contentId, 'number');
+  await assert.rejects(reviews.save(detail.contentId, 'Great track', false),
+    { status: 409, code: 'REVIEW_REQUIRES_LIBRARY' });
+  await assert.rejects(ratings.set(detail.contentId, 5),
+    { status: 409, code: 'RATING_REQUIRES_LIBRARY' });
+  assert.deepEqual(await library.list(), []);
   await library.add(detail);
+  await reviews.save(detail.contentId, 'Great track', false);
   let [item] = await library.list();
   assert.equal(item.contentId, detail.contentId);
   await library.state(item.contentId, 'escuchado');
@@ -72,7 +78,6 @@ try {
   assert.equal(item.status, 'Escuchado');
   assert.equal(item.es_favorito, true);
   assert.equal(item.puntuacion, 5);
-  await reviews.save(item.contentId, 'Great track', false);
   await reviews.save(item.contentId, 'Edited review', true);
   assert.equal((await reviews.get(item.contentId)).review.texto, 'Edited review');
   const { collection } = await collections.create('My collection');
@@ -83,7 +88,10 @@ try {
   const stats = await statistics.get();
   assert.equal(stats.favoritos, 1);
   assert.equal(stats.total_resenas, 1);
-  assert.ok((await statistics.activity()).length > 0);
+  assert.equal(stats.actividad_por_mes.reduce((total, month) => total + month.acciones, 0), 4);
+  assert.deepEqual((await statistics.activity()).map(entry => entry.tipo).sort(), [
+    'agregar_a_coleccion', 'agregar_biblioteca', 'crear_coleccion', 'marcar_favorito',
+  ]);
   await collections.removeItem(collection.id, item.contentId);
   await collections.remove(collection.id);
   await reviews.remove(item.contentId);

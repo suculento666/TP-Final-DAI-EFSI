@@ -1,5 +1,4 @@
 import pool from '../../database/pool.js';
-import { catalogRepository } from '../catalog/catalog.repository.js';
 
 // Columnas sin alias de tabla: válido en INSERT/UPDATE donde no hay JOIN.
 const BARE_COLUMNS =
@@ -17,15 +16,10 @@ const WITH_CONTENT = `
 
 // Puntuaciones viven en biblioteca_items.puntuacion (no hay tabla aparte).
 export const ratingsRepository = {
-  // UPSERT del item: si no existe, lo crea con estado default y la puntuación.
   async setRating(userId, contenidoId, score, client = pool) {
-    const content = await catalogRepository.findById(contenidoId, client);
-    if (!content) return null;
     const { rows } = await client.query(
-      `INSERT INTO biblioteca_items AS bi (usuario_id, contenido_id, estado, puntuacion)
-       VALUES ($1, $2, 'quiero_escuchar', $3)
-       ON CONFLICT (usuario_id, contenido_id) DO UPDATE
-         SET puntuacion = EXCLUDED.puntuacion, actualizado_en = now()
+      `UPDATE biblioteca_items SET puntuacion = $3, actualizado_en = now()
+       WHERE usuario_id = $1 AND contenido_id = $2
        RETURNING ${BARE_COLUMNS}`,
       [userId, contenidoId, score]
     );

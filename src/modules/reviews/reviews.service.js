@@ -1,5 +1,6 @@
 import { reviewsRepository } from './reviews.repository.js';
 import { catalogRepository } from '../catalog/catalog.repository.js';
+import { libraryRepository } from '../library/library.repository.js';
 import { activityRepository } from '../activity/activity.repository.js';
 import { withTransaction } from '../../utils/withTransaction.js';
 import { notFound, conflict } from '../../utils/errors.js';
@@ -17,6 +18,10 @@ export const reviewsService = {
     return withTransaction(async (client) => {
       const content = await catalogRepository.findById(contenidoId, client);
       if (!content) throw notFound('Contenido no encontrado');
+      const item = await libraryRepository.findByContenido(userId, contenidoId, client);
+      if (!item) {
+        throw conflict('Guardá este contenido en tu biblioteca para escribir una reseña', 'REVIEW_REQUIRES_LIBRARY');
+      }
       const review = await reviewsRepository.create(userId, contenidoId, texto, client);
       if (!review) throw conflict('Ya tenés una reseña para este contenido', 'REVIEW_EXISTS');
       await activityRepository.record(

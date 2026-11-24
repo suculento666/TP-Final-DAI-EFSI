@@ -1,4 +1,5 @@
 import pool from '../../database/pool.js';
+import { RECENT_ACTIVITY_TYPES } from '../activity/activity.constants.js';
 
 // Estadísticas calculadas dinámicamente con SQL real filtrado por usuario.
 // Cada indicador documenta su fuente.
@@ -74,9 +75,10 @@ export const statisticsService = {
         `SELECT to_char(date_trunc('month', creado_en), 'YYYY-MM') AS mes,
                 count(*)::int AS acciones
          FROM actividad WHERE usuario_id = $1
+           AND tipo = ANY($2::text[])
            AND creado_en >= now() - interval '6 months'
          GROUP BY mes ORDER BY mes`,
-        [userId]
+        [userId, RECENT_ACTIVITY_TYPES]
       ),
     ]);
 

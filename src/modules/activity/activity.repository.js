@@ -1,5 +1,5 @@
 import pool from '../../database/pool.js';
-import { VALID_ACTIVITY_TYPES } from './activity.constants.js';
+import { RECENT_ACTIVITY_TYPES, VALID_ACTIVITY_TYPES } from './activity.constants.js';
 
 const ACT_COLUMNS = 'id, usuario_id, tipo, contenido_id, coleccion_id, detalle, creado_en';
 
@@ -18,23 +18,15 @@ export const activityRepository = {
     return rows[0];
   },
 
-  // Historial del usuario, opcionalmente filtrado por tipo.
+  // Actividad reciente por defecto; el filtro por tipo consulta el historial.
   async list(userId, { limit = 50, tipo } = {}, client = pool) {
-    const where = ['usuario_id = $1'];
-    const params = [userId];
-    let idx = 2;
-    if (tipo) {
-      where.push(`tipo = $${idx++}`);
-      params.push(tipo);
-    }
     const lim = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
-    params.push(lim);
     const { rows } = await client.query(
       `SELECT ${ACT_COLUMNS} FROM actividad
-       WHERE ${where.join(' AND ')}
+       WHERE usuario_id = $1 AND tipo = ANY($2::text[])
        ORDER BY creado_en DESC
-       LIMIT $${idx}`,
-      params
+       LIMIT $3`,
+      [userId, tipo ? [tipo] : RECENT_ACTIVITY_TYPES, lim]
     );
     return rows;
   },

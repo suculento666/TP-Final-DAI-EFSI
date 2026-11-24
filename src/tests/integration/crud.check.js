@@ -267,7 +267,8 @@ try {
   }));
   await check('Actividad: registra acciones propias y aísla usuarios', async () => {
     await expect('GET', '/activity', ca, null, 200, (d) => {
-      assert.ok(d.items.some(i => i.tipo === 'crear_reseña'));
+      assert.ok(d.items.some(i => i.tipo === 'agregar_biblioteca'));
+      assert.ok(d.items.every(i => i.tipo !== 'crear_reseña'));
       assert.ok(d.items.every(i => i.usuario_id === uid));
     });
     await expect('GET', '/activity', cb, null, 200, (d) => assert.equal(d.items.length, 0));

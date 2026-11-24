@@ -7,3 +7,6 @@ export const VALID_ACTIVITY_TYPES = [
   'crear_coleccion', 'editar_coleccion', 'borrar_coleccion',
   'agregar_a_coleccion', 'quitar_de_coleccion',
 ];
+export const RECENT_ACTIVITY_TYPES = [
+  'agregar_biblioteca', 'marcar_favorito', 'crear_coleccion', 'agregar_a_coleccion',
+];
